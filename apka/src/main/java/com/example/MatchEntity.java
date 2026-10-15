@@ -1,14 +1,14 @@
 package com.example;
 
 import com.example.dto.MatchResult;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Data
+@Table(indexes = @Index(name = "idx_match_competition", columnList = "country, league, stage"))
 public class MatchEntity {
 
     @Id
@@ -29,4 +29,12 @@ public class MatchEntity {
 
     private MatchResult winHT;
     private MatchResult winFT;
+
+    // Pola uzupełniane przez automatyczny scraper (stare, ręczne rekordy mają tu null)
+    @Column(unique = true)
+    private String externalId;
+    private String league;
+    private String stage;
+    private String seasonLabel;
+    private LocalDateTime kickoff;
 }

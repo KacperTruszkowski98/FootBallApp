@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FootballApp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+    <h1>⚽ FootballApp</h1>
+    <nav class="tabs" id="mainTabs">
+        <button data-view="daily" class="active">Mecze dnia</button>
+        <button data-view="analysis">Analiza</button>
+        <button data-view="scraper">Scraper</button>
+    </nav>
+</header>
+
+<main>
+    <!-- ================= MECZE DNIA ================= -->
+    <section id="view-daily" class="view active">
+        <div class="panel daily-filters">
+            <div class="field">
+                <span class="label">Dzień</span>
+                <div class="row nowrap">
+                    <button class="ghost icon" id="dPrev" title="Poprzedni dzień">‹</button>
+                    <input type="date" id="dDate">
+                    <button class="ghost icon" id="dNext" title="Następny dzień">›</button>
+                    <button class="ghost" id="dToday">Dziś</button>
+                </div>
+            </div>
+            <label class="check">
+                <input type="checkbox" id="dTracked" checked> tylko moje ligi
+            </label>
+            <label class="check">
+                <input type="checkbox" id="dHitsOnly"> tylko pary z historią zdarzenia
+            </label>
+            <div class="field">
+                <span class="label">Dociągnij wyniki</span>
+                <button class="ghost" id="dUpdate" title="Pobiera nowe wyniki z bieżących sezonów krajów, które grają tego dnia">⟳ bieżące sezony</button>
+            </div>
+            <div class="field wide">
+                <span class="label">Zdarzenie HT/FT</span>
+                <div class="chips events-presets"></div>
+                <div class="chips events-chips"></div>
+            </div>
+        </div>
+        <div class="panel" id="dailyResult"></div>
+    </section>
+
+    <!-- ================= ANALIZA ================= -->
+    <section id="view-analysis" class="view">
+        <div class="layout">
+            <aside class="panel sidebar">
+                <input type="search" id="leagueSearch" placeholder="Szukaj kraju / ligi…">
+                <div id="leagueNav"></div>
+            </aside>
+
+            <div class="content">
+                <div class="panel">
+                    <div class="row between">
+                        <h2 id="aTitle">Wybierz ligę z listy</h2>
+                        <div class="row">
+                            <label class="inline">Od sezonu <select id="fFrom"></select></label>
+                            <label class="inline">Min. razy (pary) <input id="fMin" type="number" min="1" value="2"></label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <span class="label">Etapy</span>
+                        <div id="fStages" class="chips"></div>
+                    </div>
+                    <div class="field">
+                        <span class="label">Zdarzenie HT/FT</span>
+                        <div class="chips events-presets"></div>
+                        <div class="chips events-chips"></div>
+                    </div>
+                </div>
+
+                <nav class="tabs sub" id="subTabs">
+                    <button data-sub="pairs" class="active">Wspólne mecze</button>
+                    <button data-sub="summary">Sezony</button>
+                    <button data-sub="teams">Drużyny</button>
+                    <button data-sub="matches">Mecze</button>
+                </nav>
+
+                <div class="panel" id="result">
+                    <p class="muted">Brak danych. Uruchom scraping w zakładce „Scraper”.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SCRAPER ================= -->
+    <section id="view-scraper" class="view">
+        <div class="panel">
+            <div class="row between">
+                <h2>Kraje z konfiguracji</h2>
+                <div class="row">
+                    <button class="ghost" id="btnAll">Zaznacz wszystkie</button>
+                    <button class="ghost" id="btnNone">Odznacz</button>
+                </div>
+            </div>
+            <p class="muted small">Lista pochodzi z <code>application.yaml</code> → <code>scraper.countries</code>.
+                Nic nie zaznaczone = wszystkie kraje. Ponowne uruchomienie dociąga tylko nowe mecze.</p>
+            <div id="countryList" class="country-grid"></div>
+            <div class="row actions">
+                <button id="btnPlan" class="ghost">Podgląd: co zostanie pobrane</button>
+                <label class="check"><input type="checkbox" id="latestOnly"> tylko bieżące sezony</label>
+                <button id="btnStart">▶ Start</button>
+                <button id="btnStop" class="danger">■ Stop</button>
+            </div>
+        </div>
+
+        <div class="panel" id="jobPanel">
+            <div class="row between">
+                <h2>Postęp</h2>
+                <span id="jobState" class="badge">bezczynny</span>
+            </div>
+            <div class="progress"><div id="jobBar"></div></div>
+            <p id="jobInfo" class="muted small"></p>
+            <pre id="jobLog" class="log"></pre>
+        </div>
+
+        <div class="panel" id="planPanel" hidden>
+            <h2>Plan</h2>
+            <div id="planBody"></div>
+        </div>
+    </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
