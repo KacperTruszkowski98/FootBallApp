@@ -11,7 +11,65 @@ spring:
     properties:
       hibernate:
         default_schema: footballapp
+        hbm2ddl:
+          create_namespaces: true
     show-sql: false
 
   application:
     name: SportMonitoring
+
+  config:
+    import: classpath:api-football-leagues.yaml
+
+# Pobieranie wyników (/api/v2/scrape, front pod http://localhost:8080/)
+scraper:
+  # api-football (licencjonowane API, domyślnie) | betexplorer (scraping strony)
+  source: api-football
+
+  api-football:
+    # klucz: dashboard.api-football.com -> Account -> My Access
+    # wklej go tutaj zamiast ${...} albo ustaw zmienną środowiskową API_FOOTBALL_KEY (nie commituj klucza!)
+    key: ${API_FOOTBALL_KEY:}
+    # kraje i ligi: plik api-football-leagues.yaml (1. i 2. liga każdego kraju)
+
+  # ---- ustawienia dla source: betexplorer ----
+  # ile najwyższych lig brać z kraju, gdy nie podano "leagues"
+  default-top-leagues: 1
+  threads: 4
+  request-delay-ms: 250
+  # ligi pomijane przy automatycznym wyborze (regex, bez rozróżniania wielkości liter)
+  excluded-league-patterns:
+    - '\bcup\b'
+    - 'cupen|pokal|coupe|coppa|taça|beker|kupa|\bkup\b'
+    - 'super ?cup|supercopa|shield|trophy|campe[oó]n de campeones'
+    - 'women|femen|frauen|damallsvenskan|\bw\b'
+    - '\bu-?\d{2}\b|youth|junior|primavera|reserve'
+    - 'play.?off|friendly|kings'
+  # slug = fragment URL kraju: https://www.betexplorer.com/football/<slug>/
+  # from-year = rok startu pierwszego sezonu (2024/2025 -> 2024); lata, w których liga nie grała, są pomijane
+  # top = ile lig wziąć automatycznie; leagues = dokładne nazwy lig (wyłącza auto-wybór)
+  countries:
+    - { slug: austria, from-year: 2022 }
+    - { slug: belgium, from-year: 2022 }
+    - { slug: bolivia, from-year: 2021 }
+    - { slug: brazil, from-year: 2022, leagues: [ "Serie B", "Serie C" ] }
+    - { slug: canada, from-year: 2021 }
+    - { slug: costa-rica, from-year: 2023 }
+    - { slug: croatia, from-year: 2022 }
+    - { slug: cyprus, from-year: 2022 }
+    - { slug: denmark, from-year: 2022 }
+    - { slug: greece, from-year: 2022 }
+    - { slug: hungary, from-year: 2022 }
+    - { slug: india, from-year: 2019, leagues: [ "ISL", "I-League" ] }
+    - { slug: mexico, from-year: 2022 }
+    - { slug: nicaragua, from-year: 2022 }
+    - { slug: northern-ireland, from-year: 2022 }
+    - { slug: panama, from-year: 2022 }
+    - { slug: paraguay, from-year: 2021 }
+    - { slug: qatar, from-year: 2022 }
+    - { slug: saudi-arabia, from-year: 2022 }
+    - { slug: scotland, from-year: 2022, top: 2 }
+    - { slug: slovakia, from-year: 2022 }
+    - { slug: slovenia, from-year: 2022 }
+    - { slug: sweden, from-year: 2021 }
+    - { slug: switzerland, from-year: 2022, top: 2 }

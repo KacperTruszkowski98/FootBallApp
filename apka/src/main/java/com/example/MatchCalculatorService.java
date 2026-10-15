@@ -34,6 +34,10 @@ public class MatchCalculatorService {
             }
         }
 
+        applyScores(match, homeHT, awayHT, homeFT, awayFT);
+    }
+
+    public void applyScores(Match match, int homeHT, int awayHT, int homeFT, int awayFT) {
         // wyniki
         match.setScoreHT(homeHT + "-" + awayHT);
         match.setScoreFT(homeFT + "-" + awayFT);

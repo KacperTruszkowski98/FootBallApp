@@ -1,0 +1,9 @@
+# build Mavena
+apka/target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# macOS
+.DS_Store
