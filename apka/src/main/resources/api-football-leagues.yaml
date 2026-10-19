@@ -1,162 +1,164 @@
 # Ligi pobierane z API-Football: w każdym kraju 1. i 2. poziom rozgrywek (stan na sezon 2025/2026).
 # Wygenerowane z GET /leagues?type=league; ID lig sprawdzisz tym samym zapytaniem z parametrem country=<Kraj>.
 # slug = nazwa kraju w API małymi literami; from-year = pierwszy sezon (rok startu).
+# leagues = id lig od najwyższego poziomu, names = ich nazwy (lista w zakładce Scraper),
+# tiers = poziom każdej ligi, gdy kilka lig jest na tym samym poziomie (np. Apertura i Clausura).
 scraper:
   api-football:
     countries:
-      - { slug: albania, from-year: 2021, leagues: [ 310, 311 ] }                   # Albania: Superliga, 1st Division
-      - { slug: algeria, from-year: 2021, leagues: [ 186, 187 ] }                   # Algeria: Ligue 1, Ligue 2
-      - { slug: andorra, from-year: 2021, leagues: [ 312 ] }                        # Andorra: 1a Divisió
-      - { slug: angola, from-year: 2021, leagues: [ 397 ] }                         # Angola: Girabola
-      - { slug: antigua-and-barbuda, from-year: 2021, leagues: [ 1048 ] }           # Antigua And Barbuda: Premier Division
-      - { slug: argentina, from-year: 2021, leagues: [ 128, 129 ] }                 # Argentina: Liga Profesional Argentina, Primera Nacional
-      - { slug: armenia, from-year: 2021, leagues: [ 342, 343 ] }                   # Armenia: Premier League, First League
-      - { slug: aruba, from-year: 2021, leagues: [ 421 ] }                          # Aruba: Division di Honor
-      - { slug: australia, from-year: 2021, leagues: [ 188 ] }                      # Australia: A-League
-      - { slug: austria, from-year: 2021, leagues: [ 218, 219 ] }                   # Austria: Bundesliga, 2. Liga
-      - { slug: azerbaijan, from-year: 2021, leagues: [ 418, 419 ] }                # Azerbaijan: Birinci Dasta, Premyer Liqa
-      - { slug: bahrain, from-year: 2021, leagues: [ 417 ] }                        # Bahrain: Premier League
-      - { slug: bangladesh, from-year: 2021, leagues: [ 398 ] }                     # Bangladesh: Premier League
-      - { slug: barbados, from-year: 2021, leagues: [ 422 ] }                       # Barbados: Premier League
-      - { slug: belarus, from-year: 2021, leagues: [ 116, 117 ] }                   # Belarus: Premier League, 1. Division
-      - { slug: belgium, from-year: 2021, leagues: [ 144, 145 ] }                   # Belgium: Jupiler Pro League, Challenger Pro League
-      - { slug: belize, from-year: 2021, leagues: [ 416 ] }                         # Belize: Premier League
-      - { slug: benin, from-year: 2021, leagues: [ 415 ] }                          # Benin: Championnat National
-      - { slug: bhutan, from-year: 2021, leagues: [ 413, 1031 ] }                   # Bhutan: Super League, Premier League
-      - { slug: bolivia, from-year: 2021, leagues: [ 344, 710 ] }                   # Bolivia: Primera División, Nacional B
-      - { slug: bosnia, from-year: 2021, leagues: [ 315, 316, 317 ] }               # Bosnia: Premijer Liga, 1st League - FBiH, 1st League - RS
-      - { slug: botswana, from-year: 2021, leagues: [ 412 ] }                       # Botswana: Premier League
-      - { slug: brazil, from-year: 2021, leagues: [ 71, 72 ] }                      # Brazil: Serie A, Serie B
-      - { slug: bulgaria, from-year: 2021, leagues: [ 172, 173 ] }                  # Bulgaria: First League, Second League
-      - { slug: burkina-faso, from-year: 2021, leagues: [ 423 ] }                   # Burkina Faso: Ligue 1
-      - { slug: burundi, from-year: 2021, leagues: [ 566 ] }                        # Burundi: Ligue A
-      - { slug: cambodia, from-year: 2021, leagues: [ 410 ] }                       # Cambodia: C-League
-      - { slug: cameroon, from-year: 2021, leagues: [ 411, 813 ] }                  # Cameroon: Elite One, Elite Two
-      - { slug: canada, from-year: 2021, leagues: [ 479 ] }                         # Canada: Canadian Premier League
-      - { slug: chile, from-year: 2021, leagues: [ 265, 266 ] }                     # Chile: Primera División, Primera B
-      - { slug: china, from-year: 2021, leagues: [ 169, 170 ] }                     # China: Super League, League One
-      - { slug: chinese-taipei, from-year: 2021, leagues: [ 589 ] }                 # Chinese Taipei: Taiwan Football Premier League
-      - { slug: colombia, from-year: 2021, leagues: [ 239, 240 ] }                  # Colombia: Primera A, Primera B
-      - { slug: congo, from-year: 2021, leagues: [ 844 ] }                          # Congo: Ligue 1
-      - { slug: congo-dr, from-year: 2021, leagues: [ 424 ] }                       # Congo DR: Ligue 1
-      - { slug: costa-rica, from-year: 2021, leagues: [ 162, 163 ] }                # Costa Rica: Primera División, Liga de Ascenso
-      - { slug: croatia, from-year: 2021, leagues: [ 210, 211 ] }                   # Croatia: HNL, First NL
-      - { slug: cuba, from-year: 2021, leagues: [ 907 ] }                           # Cuba: Primera Division
-      - { slug: cyprus, from-year: 2021, leagues: [ 318, 319 ] }                    # Cyprus: 1. Division, 2. Division
-      - { slug: czech-republic, from-year: 2021, leagues: [ 345, 346 ] }            # Czech Republic: Czech Liga, FNL
-      - { slug: denmark, from-year: 2021, leagues: [ 119, 120 ] }                   # Denmark: Superliga, 1. Division
-      - { slug: dominican-republic, from-year: 2021, leagues: [ 759 ] }             # Dominican Republic: Liga Mayor
-      - { slug: ecuador, from-year: 2021, leagues: [ 242, 243 ] }                   # Ecuador: Liga Pro, Liga Pro Serie B
-      - { slug: egypt, from-year: 2021, leagues: [ 233, 887 ] }                     # Egypt: Premier League, Second League
-      - { slug: el-salvador, from-year: 2021, leagues: [ 370 ] }                    # El Salvador: Primera Division
-      - { slug: england, from-year: 2021, leagues: [ 39, 40 ] }                     # England: Premier League, Championship
-      - { slug: estonia, from-year: 2021, leagues: [ 328, 329 ] }                   # Estonia: Esiliiga A, Meistriliiga
-      - { slug: eswatini, from-year: 2021, leagues: [ 847 ] }                       # Eswatini: Premier League
-      - { slug: ethiopia, from-year: 2021, leagues: [ 363 ] }                       # Ethiopia: Premier League
-      - { slug: faroe-islands, from-year: 2021, leagues: [ 366, 367 ] }             # Faroe Islands: 1. Deild, Meistaradeildin
-      - { slug: fiji, from-year: 2021, leagues: [ 376 ] }                           # Fiji: National Football League
-      - { slug: finland, from-year: 2021, leagues: [ 244, 245 ] }                   # Finland: Veikkausliiga, Ykkönen
-      - { slug: france, from-year: 2021, leagues: [ 61, 62 ] }                      # France: Ligue 1, Ligue 2
-      - { slug: gabon, from-year: 2021, leagues: [ 968 ] }                          # Gabon: Championnat D1
-      - { slug: gambia, from-year: 2021, leagues: [ 845 ] }                         # Gambia: GFA League
-      - { slug: georgia, from-year: 2021, leagues: [ 326, 327 ] }                   # Georgia: Erovnuli Liga 2, Erovnuli Liga
-      - { slug: germany, from-year: 2021, leagues: [ 78, 79 ] }                     # Germany: Bundesliga, 2. Bundesliga
-      - { slug: ghana, from-year: 2021, leagues: [ 570, 1196 ] }                    # Ghana: Premier League, Division One League
-      - { slug: gibraltar, from-year: 2021, leagues: [ 758 ] }                      # Gibraltar: Premier Division
-      - { slug: greece, from-year: 2021, leagues: [ 197, 494 ] }                    # Greece: Super League 1, Super League 2
-      - { slug: grenada, from-year: 2021, leagues: [ 1080 ] }                       # Grenada: Premier Division
-      - { slug: guatemala, from-year: 2021, leagues: [ 339 ] }                      # Guatemala: Liga Nacional
-      - { slug: guinea, from-year: 2021, leagues: [ 378 ] }                         # Guinea: Ligue 1
-      - { slug: haiti, from-year: 2021, leagues: [ 379 ] }                          # Haiti: Ligue Haïtienne
-      - { slug: honduras, from-year: 2021, leagues: [ 234 ] }                       # Honduras: Liga Nacional
-      - { slug: hong-kong, from-year: 2021, leagues: [ 380, 381 ] }                 # Hong Kong: Premier League, HKFA 1st Division
-      - { slug: hungary, from-year: 2021, leagues: [ 271, 272 ] }                   # Hungary: NB I, NB II
-      - { slug: iceland, from-year: 2021, leagues: [ 164, 165 ] }                   # Iceland: Úrvalsdeild, 1. Deild
-      - { slug: india, from-year: 2021, leagues: [ 323, 324 ] }                     # India: Indian Super League, I-League
-      - { slug: indonesia, from-year: 2021, leagues: [ 274, 275 ] }                 # Indonesia: Liga 1, Liga 2
-      - { slug: iran, from-year: 2021, leagues: [ 290, 291 ] }                      # Iran: Persian Gulf Pro League, Azadegan League
-      - { slug: iraq, from-year: 2021, leagues: [ 542 ] }                           # Iraq: Iraqi League
-      - { slug: ireland, from-year: 2021, leagues: [ 357, 358 ] }                   # Ireland: Premier Division, First Division
-      - { slug: israel, from-year: 2021, leagues: [ 382, 383 ] }                    # Israel: Liga Leumit, Ligat Ha'al
-      - { slug: italy, from-year: 2021, leagues: [ 135, 136 ] }                     # Italy: Serie A, Serie B
-      - { slug: ivory-coast, from-year: 2021, leagues: [ 386 ] }                    # Ivory Coast: Ligue 1
-      - { slug: jamaica, from-year: 2021, leagues: [ 322 ] }                        # Jamaica: Premier League
-      - { slug: japan, from-year: 2021, leagues: [ 98, 99 ] }                       # Japan: J1 League, J2 League
-      - { slug: jordan, from-year: 2021, leagues: [ 387 ] }                         # Jordan: League
-      - { slug: kazakhstan, from-year: 2021, leagues: [ 388, 389 ] }                # Kazakhstan: 1. Division, Premier League
-      - { slug: kenya, from-year: 2021, leagues: [ 276, 277 ] }                     # Kenya: FKF Premier League, Super League
-      - { slug: kosovo, from-year: 2021, leagues: [ 664, 1195 ] }                   # Kosovo: Superliga, Liga E Pare
-      - { slug: kuwait, from-year: 2021, leagues: [ 330, 331 ] }                    # Kuwait: Premier League, Division 1
-      - { slug: kyrgyzstan, from-year: 2021, leagues: [ 569 ] }                     # Kyrgyzstan: Premier League
-      - { slug: laos, from-year: 2021, leagues: [ 647 ] }                           # Laos: Lao League
-      - { slug: latvia, from-year: 2021, leagues: [ 364, 365 ] }                    # Latvia: 1. Liga, Virsliga
-      - { slug: lebanon, from-year: 2021, leagues: [ 390 ] }                        # Lebanon: Premier League
-      - { slug: lesotho, from-year: 2021, leagues: [ 962 ] }                        # Lesotho: Premier League
-      - { slug: liberia, from-year: 2021, leagues: [ 760 ] }                        # Liberia: LFA First Division
-      - { slug: libya, from-year: 2021, leagues: [ 584 ] }                          # Libya: Premier League
-      - { slug: lithuania, from-year: 2021, leagues: [ 361, 362 ] }                 # Lithuania: 1 Lyga, A Lyga
-      - { slug: luxembourg, from-year: 2021, leagues: [ 261 ] }                     # Luxembourg: National Division
-      - { slug: macao, from-year: 2021, leagues: [ 969 ] }                          # Macao: Primeira Divisão
-      - { slug: macedonia, from-year: 2021, leagues: [ 371, 372 ] }                 # Macedonia: First League, Second League
-      - { slug: malawi, from-year: 2021, leagues: [ 391 ] }                         # Malawi: Super League
-      - { slug: malaysia, from-year: 2021, leagues: [ 278 ] }                       # Malaysia: Super League
-      - { slug: mali, from-year: 2021, leagues: [ 598 ] }                           # Mali: Première Division
-      - { slug: malta, from-year: 2021, leagues: [ 392, 393 ] }                     # Malta: Challenge League, Premier League
-      - { slug: mauritania, from-year: 2021, leagues: [ 762 ] }                     # Mauritania: Premier League
-      - { slug: mexico, from-year: 2021, leagues: [ 262, 263 ] }                    # Mexico: Liga MX, Liga de Expansión MX
-      - { slug: moldova, from-year: 2021, leagues: [ 394, 395 ] }                   # Moldova: Super Liga, Liga 1
-      - { slug: mongolia, from-year: 2021, leagues: [ 764 ] }                       # Mongolia: Premier League
-      - { slug: montenegro, from-year: 2021, leagues: [ 355, 356 ] }                # Montenegro: First League, Second League
-      - { slug: morocco, from-year: 2021, leagues: [ 200, 201 ] }                   # Morocco: Botola Pro, Botola 2
-      - { slug: myanmar, from-year: 2021, leagues: [ 588 ] }                        # Myanmar: National League
-      - { slug: netherlands, from-year: 2021, leagues: [ 88, 89 ] }                 # Netherlands: Eredivisie, Eerste Divisie
-      - { slug: new-zealand, from-year: 2021, leagues: [ 955 ] }                    # New Zealand: National League - National
-      - { slug: nicaragua, from-year: 2021, leagues: [ 396 ] }                      # Nicaragua: Primera Division
-      - { slug: nigeria, from-year: 2021, leagues: [ 399 ] }                        # Nigeria: NPFL
-      - { slug: northern-ireland, from-year: 2021, leagues: [ 407, 408 ] }          # Northern Ireland: Championship, Premiership
-      - { slug: norway, from-year: 2021, leagues: [ 103, 104 ] }                    # Norway: Eliteserien, 1. Division
-      - { slug: oman, from-year: 2021, leagues: [ 406 ] }                           # Oman: Professional League
-      - { slug: panama, from-year: 2021, leagues: [ 304 ] }                         # Panama: Liga Panameña de Fútbol
-      - { slug: paraguay, from-year: 2021, leagues: [ 250, 252, 251 ] }             # Paraguay: Division Profesional - Apertura, Division Profesional - Clausura, Division Intermedia
-      - { slug: peru, from-year: 2021, leagues: [ 281, 282 ] }                      # Peru: Primera División, Segunda División
-      - { slug: philippines, from-year: 2021, leagues: [ 765 ] }                    # Philippines: PFL
-      - { slug: poland, from-year: 2021, leagues: [ 106, 107 ] }                    # Poland: Ekstraklasa, I Liga
-      - { slug: portugal, from-year: 2021, leagues: [ 94, 95 ] }                    # Portugal: Primeira Liga, Segunda Liga
-      - { slug: qatar, from-year: 2021, leagues: [ 305, 306 ] }                     # Qatar: Stars League, Second Division
-      - { slug: romania, from-year: 2021, leagues: [ 283, 284 ] }                   # Romania: Liga I, Liga II
-      - { slug: russia, from-year: 2021, leagues: [ 235, 236 ] }                    # Russia: Premier League, First League
-      - { slug: rwanda, from-year: 2021, leagues: [ 405 ] }                         # Rwanda: National Soccer League
-      - { slug: san-marino, from-year: 2021, leagues: [ 404 ] }                     # San Marino: Campionato
-      - { slug: saudi-arabia, from-year: 2021, leagues: [ 307, 308 ] }              # Saudi Arabia: Pro League, Division 1
-      - { slug: scotland, from-year: 2021, leagues: [ 179, 180 ] }                  # Scotland: Premiership, Championship
-      - { slug: senegal, from-year: 2021, leagues: [ 403 ] }                        # Senegal: Ligue 1
-      - { slug: serbia, from-year: 2021, leagues: [ 286, 287 ] }                    # Serbia: Super Liga, Prva Liga
-      - { slug: singapore, from-year: 2021, leagues: [ 368 ] }                      # Singapore: Premier League
-      - { slug: slovakia, from-year: 2021, leagues: [ 332, 506 ] }                  # Slovakia: Super Liga, 2. liga
-      - { slug: slovenia, from-year: 2021, leagues: [ 373, 374 ] }                  # Slovenia: 1. SNL, 2. SNL
-      - { slug: south-africa, from-year: 2021, leagues: [ 288, 289 ] }              # South Africa: Premier Soccer League, 1st Division
-      - { slug: south-korea, from-year: 2021, leagues: [ 292, 293 ] }               # South Korea: K League 1, K League 2
-      - { slug: spain, from-year: 2021, leagues: [ 140, 141 ] }                     # Spain: La Liga, Segunda División
-      - { slug: sudan, from-year: 2021, leagues: [ 402 ] }                          # Sudan: Sudani Premier League
-      - { slug: suriname, from-year: 2021, leagues: [ 568 ] }                       # Suriname: Eerste Divisie
-      - { slug: sweden, from-year: 2021, leagues: [ 113, 114 ] }                    # Sweden: Allsvenskan, Superettan
-      - { slug: switzerland, from-year: 2021, leagues: [ 207, 208 ] }               # Switzerland: Super League, Challenge League
-      - { slug: syria, from-year: 2021, leagues: [ 425 ] }                          # Syria: Premier League
-      - { slug: tajikistan, from-year: 2021, leagues: [ 571 ] }                     # Tajikistan: Vysshaya Liga
-      - { slug: tanzania, from-year: 2021, leagues: [ 567 ] }                       # Tanzania: Ligi kuu Bara
-      - { slug: thailand, from-year: 2021, leagues: [ 296, 297 ] }                  # Thailand: Thai League 1, Thai League 2
-      - { slug: trinidad-and-tobago, from-year: 2021, leagues: [ 591 ] }            # Trinidad And Tobago: Pro League
-      - { slug: tunisia, from-year: 2021, leagues: [ 202, 828 ] }                   # Tunisia: Ligue 1, Ligue 2
-      - { slug: turkey, from-year: 2021, leagues: [ 203, 204 ] }                    # Turkey: Süper Lig, 1. Lig
-      - { slug: turkmenistan, from-year: 2021, leagues: [ 636 ] }                   # Turkmenistan: Ýokary Liga
-      - { slug: usa, from-year: 2021, leagues: [ 253, 255 ] }                       # USA: Major League Soccer, USL Championship
-      - { slug: uganda, from-year: 2021, leagues: [ 585 ] }                         # Uganda: Premier League
-      - { slug: ukraine, from-year: 2021, leagues: [ 333, 334 ] }                   # Ukraine: Premier League, Persha Liga
-      - { slug: united-arab-emirates, from-year: 2021, leagues: [ 301, 303 ] }      # United Arab Emirates: Pro League, Division 1
-      - { slug: uruguay, from-year: 2021, leagues: [ 268, 270, 269 ] }              # Uruguay: Primera División, Primera División - Clausura, Segunda División
-      - { slug: uzbekistan, from-year: 2021, leagues: [ 369, 1075 ] }               # Uzbekistan: Super League, Pro League A
-      - { slug: venezuela, from-year: 2021, leagues: [ 299, 300 ] }                 # Venezuela: Primera División, Segunda División
-      - { slug: vietnam, from-year: 2021, leagues: [ 340, 637 ] }                   # Vietnam: V.League 1, V.League 2
-      - { slug: wales, from-year: 2021, leagues: [ 110, 111 ] }                     # Wales: Premier League, FAW Championship
-      - { slug: zambia, from-year: 2021, leagues: [ 400 ] }                         # Zambia: Super League
-      - { slug: zimbabwe, from-year: 2021, leagues: [ 401 ] }                       # Zimbabwe: Premier Soccer League
+      - { slug: albania, name: "Albania", from-year: 2021, leagues: [ 310, 311 ], names: [ "Superliga", "1st Division" ] }
+      - { slug: algeria, name: "Algeria", from-year: 2021, leagues: [ 186, 187 ], names: [ "Ligue 1", "Ligue 2" ] }
+      - { slug: andorra, name: "Andorra", from-year: 2021, leagues: [ 312 ], names: [ "1a Divisió" ] }
+      - { slug: angola, name: "Angola", from-year: 2021, leagues: [ 397 ], names: [ "Girabola" ] }
+      - { slug: antigua-and-barbuda, name: "Antigua And Barbuda", from-year: 2021, leagues: [ 1048 ], names: [ "Premier Division" ] }
+      - { slug: argentina, name: "Argentina", from-year: 2021, leagues: [ 128, 129 ], names: [ "Liga Profesional Argentina", "Primera Nacional" ] }
+      - { slug: armenia, name: "Armenia", from-year: 2021, leagues: [ 342, 343 ], names: [ "Premier League", "First League" ] }
+      - { slug: aruba, name: "Aruba", from-year: 2021, leagues: [ 421 ], names: [ "Division di Honor" ] }
+      - { slug: australia, name: "Australia", from-year: 2021, leagues: [ 188 ], names: [ "A-League" ] }
+      - { slug: austria, name: "Austria", from-year: 2021, leagues: [ 218, 219 ], names: [ "Bundesliga", "2. Liga" ] }
+      - { slug: azerbaijan, name: "Azerbaijan", from-year: 2021, leagues: [ 419, 418 ], names: [ "Premyer Liqa", "Birinci Dasta" ] }
+      - { slug: bahrain, name: "Bahrain", from-year: 2021, leagues: [ 417 ], names: [ "Premier League" ] }
+      - { slug: bangladesh, name: "Bangladesh", from-year: 2021, leagues: [ 398 ], names: [ "Premier League" ] }
+      - { slug: barbados, name: "Barbados", from-year: 2021, leagues: [ 422 ], names: [ "Premier League" ] }
+      - { slug: belarus, name: "Belarus", from-year: 2021, leagues: [ 116, 117 ], names: [ "Premier League", "1. Division" ] }
+      - { slug: belgium, name: "Belgium", from-year: 2021, leagues: [ 144, 145 ], names: [ "Jupiler Pro League", "Challenger Pro League" ] }
+      - { slug: belize, name: "Belize", from-year: 2021, leagues: [ 416 ], names: [ "Premier League" ] }
+      - { slug: benin, name: "Benin", from-year: 2021, leagues: [ 415 ], names: [ "Championnat National" ] }
+      - { slug: bhutan, name: "Bhutan", from-year: 2021, leagues: [ 1031, 413 ], names: [ "Premier League", "Super League" ] }
+      - { slug: bolivia, name: "Bolivia", from-year: 2021, leagues: [ 344, 710 ], names: [ "Primera División", "Nacional B" ] }
+      - { slug: bosnia, name: "Bosnia", from-year: 2021, leagues: [ 315, 316, 317 ], names: [ "Premijer Liga", "1st League - FBiH", "1st League - RS" ], tiers: [ 1, 2, 2 ] }
+      - { slug: botswana, name: "Botswana", from-year: 2021, leagues: [ 412 ], names: [ "Premier League" ] }
+      - { slug: brazil, name: "Brazil", from-year: 2021, leagues: [ 71, 72 ], names: [ "Serie A", "Serie B" ] }
+      - { slug: bulgaria, name: "Bulgaria", from-year: 2021, leagues: [ 172, 173 ], names: [ "First League", "Second League" ] }
+      - { slug: burkina-faso, name: "Burkina Faso", from-year: 2021, leagues: [ 423 ], names: [ "Ligue 1" ] }
+      - { slug: burundi, name: "Burundi", from-year: 2021, leagues: [ 566 ], names: [ "Ligue A" ] }
+      - { slug: cambodia, name: "Cambodia", from-year: 2021, leagues: [ 410 ], names: [ "C-League" ] }
+      - { slug: cameroon, name: "Cameroon", from-year: 2021, leagues: [ 411, 813 ], names: [ "Elite One", "Elite Two" ] }
+      - { slug: canada, name: "Canada", from-year: 2021, leagues: [ 479 ], names: [ "Canadian Premier League" ] }
+      - { slug: chile, name: "Chile", from-year: 2021, leagues: [ 265, 266 ], names: [ "Primera División", "Primera B" ] }
+      - { slug: china, name: "China", from-year: 2021, leagues: [ 169, 170 ], names: [ "Super League", "League One" ] }
+      - { slug: chinese-taipei, name: "Chinese Taipei", from-year: 2021, leagues: [ 589 ], names: [ "Taiwan Football Premier League" ] }
+      - { slug: colombia, name: "Colombia", from-year: 2021, leagues: [ 239, 240 ], names: [ "Primera A", "Primera B" ] }
+      - { slug: congo, name: "Congo", from-year: 2021, leagues: [ 844 ], names: [ "Ligue 1" ] }
+      - { slug: congo-dr, name: "Congo DR", from-year: 2021, leagues: [ 424 ], names: [ "Ligue 1" ] }
+      - { slug: costa-rica, name: "Costa Rica", from-year: 2021, leagues: [ 162, 163 ], names: [ "Primera División", "Liga de Ascenso" ] }
+      - { slug: croatia, name: "Croatia", from-year: 2021, leagues: [ 210, 211 ], names: [ "HNL", "First NL" ] }
+      - { slug: cuba, name: "Cuba", from-year: 2021, leagues: [ 907 ], names: [ "Primera Division" ] }
+      - { slug: cyprus, name: "Cyprus", from-year: 2021, leagues: [ 318, 319 ], names: [ "1. Division", "2. Division" ] }
+      - { slug: czech-republic, name: "Czech Republic", from-year: 2021, leagues: [ 345, 346 ], names: [ "Czech Liga", "FNL" ] }
+      - { slug: denmark, name: "Denmark", from-year: 2021, leagues: [ 119, 120 ], names: [ "Superliga", "1. Division" ] }
+      - { slug: dominican-republic, name: "Dominican Republic", from-year: 2021, leagues: [ 759 ], names: [ "Liga Mayor" ] }
+      - { slug: ecuador, name: "Ecuador", from-year: 2021, leagues: [ 242, 243 ], names: [ "Liga Pro", "Liga Pro Serie B" ] }
+      - { slug: egypt, name: "Egypt", from-year: 2021, leagues: [ 233, 887 ], names: [ "Premier League", "Second League" ] }
+      - { slug: el-salvador, name: "El Salvador", from-year: 2021, leagues: [ 370 ], names: [ "Primera Division" ] }
+      - { slug: england, name: "England", from-year: 2021, leagues: [ 39, 40 ], names: [ "Premier League", "Championship" ] }
+      - { slug: estonia, name: "Estonia", from-year: 2021, leagues: [ 329, 328 ], names: [ "Meistriliiga", "Esiliiga A" ] }
+      - { slug: eswatini, name: "Eswatini", from-year: 2021, leagues: [ 847 ], names: [ "Premier League" ] }
+      - { slug: ethiopia, name: "Ethiopia", from-year: 2021, leagues: [ 363 ], names: [ "Premier League" ] }
+      - { slug: faroe-islands, name: "Faroe Islands", from-year: 2021, leagues: [ 367, 366 ], names: [ "Meistaradeildin", "1. Deild" ] }
+      - { slug: fiji, name: "Fiji", from-year: 2021, leagues: [ 376 ], names: [ "National Football League" ] }
+      - { slug: finland, name: "Finland", from-year: 2021, leagues: [ 244, 245 ], names: [ "Veikkausliiga", "Ykkönen" ] }
+      - { slug: france, name: "France", from-year: 2021, leagues: [ 61, 62 ], names: [ "Ligue 1", "Ligue 2" ] }
+      - { slug: gabon, name: "Gabon", from-year: 2021, leagues: [ 968 ], names: [ "Championnat D1" ] }
+      - { slug: gambia, name: "Gambia", from-year: 2021, leagues: [ 845 ], names: [ "GFA League" ] }
+      - { slug: georgia, name: "Georgia", from-year: 2021, leagues: [ 327, 326 ], names: [ "Erovnuli Liga", "Erovnuli Liga 2" ] }
+      - { slug: germany, name: "Germany", from-year: 2021, leagues: [ 78, 79 ], names: [ "Bundesliga", "2. Bundesliga" ] }
+      - { slug: ghana, name: "Ghana", from-year: 2021, leagues: [ 570, 1196 ], names: [ "Premier League", "Division One League" ] }
+      - { slug: gibraltar, name: "Gibraltar", from-year: 2021, leagues: [ 758 ], names: [ "Premier Division" ] }
+      - { slug: greece, name: "Greece", from-year: 2021, leagues: [ 197, 494 ], names: [ "Super League 1", "Super League 2" ] }
+      - { slug: grenada, name: "Grenada", from-year: 2021, leagues: [ 1080 ], names: [ "Premier Division" ] }
+      - { slug: guatemala, name: "Guatemala", from-year: 2021, leagues: [ 339 ], names: [ "Liga Nacional" ] }
+      - { slug: guinea, name: "Guinea", from-year: 2021, leagues: [ 378 ], names: [ "Ligue 1" ] }
+      - { slug: haiti, name: "Haiti", from-year: 2021, leagues: [ 379 ], names: [ "Ligue Haïtienne" ] }
+      - { slug: honduras, name: "Honduras", from-year: 2021, leagues: [ 234 ], names: [ "Liga Nacional" ] }
+      - { slug: hong-kong, name: "Hong Kong", from-year: 2021, leagues: [ 380, 381 ], names: [ "Premier League", "HKFA 1st Division" ] }
+      - { slug: hungary, name: "Hungary", from-year: 2021, leagues: [ 271, 272 ], names: [ "NB I", "NB II" ] }
+      - { slug: iceland, name: "Iceland", from-year: 2021, leagues: [ 164, 165 ], names: [ "Úrvalsdeild", "1. Deild" ] }
+      - { slug: india, name: "India", from-year: 2021, leagues: [ 323, 324 ], names: [ "Indian Super League", "I-League" ] }
+      - { slug: indonesia, name: "Indonesia", from-year: 2021, leagues: [ 274, 275 ], names: [ "Liga 1", "Liga 2" ] }
+      - { slug: iran, name: "Iran", from-year: 2021, leagues: [ 290, 291 ], names: [ "Persian Gulf Pro League", "Azadegan League" ] }
+      - { slug: iraq, name: "Iraq", from-year: 2021, leagues: [ 542 ], names: [ "Iraqi League" ] }
+      - { slug: ireland, name: "Ireland", from-year: 2021, leagues: [ 357, 358 ], names: [ "Premier Division", "First Division" ] }
+      - { slug: israel, name: "Israel", from-year: 2021, leagues: [ 383, 382 ], names: [ "Ligat Ha'al", "Liga Leumit" ] }
+      - { slug: italy, name: "Italy", from-year: 2021, leagues: [ 135, 136 ], names: [ "Serie A", "Serie B" ] }
+      - { slug: ivory-coast, name: "Ivory Coast", from-year: 2021, leagues: [ 386 ], names: [ "Ligue 1" ] }
+      - { slug: jamaica, name: "Jamaica", from-year: 2021, leagues: [ 322 ], names: [ "Premier League" ] }
+      - { slug: japan, name: "Japan", from-year: 2021, leagues: [ 98, 99 ], names: [ "J1 League", "J2 League" ] }
+      - { slug: jordan, name: "Jordan", from-year: 2021, leagues: [ 387 ], names: [ "League" ] }
+      - { slug: kazakhstan, name: "Kazakhstan", from-year: 2021, leagues: [ 389, 388 ], names: [ "Premier League", "1. Division" ] }
+      - { slug: kenya, name: "Kenya", from-year: 2021, leagues: [ 276, 277 ], names: [ "FKF Premier League", "Super League" ] }
+      - { slug: kosovo, name: "Kosovo", from-year: 2021, leagues: [ 664, 1195 ], names: [ "Superliga", "Liga E Pare" ] }
+      - { slug: kuwait, name: "Kuwait", from-year: 2021, leagues: [ 330, 331 ], names: [ "Premier League", "Division 1" ] }
+      - { slug: kyrgyzstan, name: "Kyrgyzstan", from-year: 2021, leagues: [ 569 ], names: [ "Premier League" ] }
+      - { slug: laos, name: "Laos", from-year: 2021, leagues: [ 647 ], names: [ "Lao League" ] }
+      - { slug: latvia, name: "Latvia", from-year: 2021, leagues: [ 365, 364 ], names: [ "Virsliga", "1. Liga" ] }
+      - { slug: lebanon, name: "Lebanon", from-year: 2021, leagues: [ 390 ], names: [ "Premier League" ] }
+      - { slug: lesotho, name: "Lesotho", from-year: 2021, leagues: [ 962 ], names: [ "Premier League" ] }
+      - { slug: liberia, name: "Liberia", from-year: 2021, leagues: [ 760 ], names: [ "LFA First Division" ] }
+      - { slug: libya, name: "Libya", from-year: 2021, leagues: [ 584 ], names: [ "Premier League" ] }
+      - { slug: lithuania, name: "Lithuania", from-year: 2021, leagues: [ 362, 361 ], names: [ "A Lyga", "1 Lyga" ] }
+      - { slug: luxembourg, name: "Luxembourg", from-year: 2021, leagues: [ 261 ], names: [ "National Division" ] }
+      - { slug: macao, name: "Macao", from-year: 2021, leagues: [ 969 ], names: [ "Primeira Divisão" ] }
+      - { slug: macedonia, name: "Macedonia", from-year: 2021, leagues: [ 371, 372 ], names: [ "First League", "Second League" ] }
+      - { slug: malawi, name: "Malawi", from-year: 2021, leagues: [ 391 ], names: [ "Super League" ] }
+      - { slug: malaysia, name: "Malaysia", from-year: 2021, leagues: [ 278 ], names: [ "Super League" ] }
+      - { slug: mali, name: "Mali", from-year: 2021, leagues: [ 598 ], names: [ "Première Division" ] }
+      - { slug: malta, name: "Malta", from-year: 2021, leagues: [ 393, 392 ], names: [ "Premier League", "Challenge League" ] }
+      - { slug: mauritania, name: "Mauritania", from-year: 2021, leagues: [ 762 ], names: [ "Premier League" ] }
+      - { slug: mexico, name: "Mexico", from-year: 2021, leagues: [ 262, 263 ], names: [ "Liga MX", "Liga de Expansión MX" ] }
+      - { slug: moldova, name: "Moldova", from-year: 2021, leagues: [ 394, 395 ], names: [ "Super Liga", "Liga 1" ] }
+      - { slug: mongolia, name: "Mongolia", from-year: 2021, leagues: [ 764 ], names: [ "Premier League" ] }
+      - { slug: montenegro, name: "Montenegro", from-year: 2021, leagues: [ 355, 356 ], names: [ "First League", "Second League" ] }
+      - { slug: morocco, name: "Morocco", from-year: 2021, leagues: [ 200, 201 ], names: [ "Botola Pro", "Botola 2" ] }
+      - { slug: myanmar, name: "Myanmar", from-year: 2021, leagues: [ 588 ], names: [ "National League" ] }
+      - { slug: netherlands, name: "Netherlands", from-year: 2021, leagues: [ 88, 89 ], names: [ "Eredivisie", "Eerste Divisie" ] }
+      - { slug: new-zealand, name: "New Zealand", from-year: 2021, leagues: [ 955 ], names: [ "National League - National" ] }
+      - { slug: nicaragua, name: "Nicaragua", from-year: 2021, leagues: [ 396 ], names: [ "Primera Division" ] }
+      - { slug: nigeria, name: "Nigeria", from-year: 2021, leagues: [ 399 ], names: [ "NPFL" ] }
+      - { slug: northern-ireland, name: "Northern Ireland", from-year: 2021, leagues: [ 408, 407 ], names: [ "Premiership", "Championship" ] }
+      - { slug: norway, name: "Norway", from-year: 2021, leagues: [ 103, 104 ], names: [ "Eliteserien", "1. Division" ] }
+      - { slug: oman, name: "Oman", from-year: 2021, leagues: [ 406 ], names: [ "Professional League" ] }
+      - { slug: panama, name: "Panama", from-year: 2021, leagues: [ 304 ], names: [ "Liga Panameña de Fútbol" ] }
+      - { slug: paraguay, name: "Paraguay", from-year: 2021, leagues: [ 250, 252, 251 ], names: [ "Division Profesional - Apertura", "Division Profesional - Clausura", "Division Intermedia" ], tiers: [ 1, 1, 2 ] }
+      - { slug: peru, name: "Peru", from-year: 2021, leagues: [ 281, 282 ], names: [ "Primera División", "Segunda División" ] }
+      - { slug: philippines, name: "Philippines", from-year: 2021, leagues: [ 765 ], names: [ "PFL" ] }
+      - { slug: poland, name: "Poland", from-year: 2021, leagues: [ 106, 107 ], names: [ "Ekstraklasa", "I Liga" ] }
+      - { slug: portugal, name: "Portugal", from-year: 2021, leagues: [ 94, 95 ], names: [ "Primeira Liga", "Segunda Liga" ] }
+      - { slug: qatar, name: "Qatar", from-year: 2021, leagues: [ 305, 306 ], names: [ "Stars League", "Second Division" ] }
+      - { slug: romania, name: "Romania", from-year: 2021, leagues: [ 283, 284 ], names: [ "Liga I", "Liga II" ] }
+      - { slug: russia, name: "Russia", from-year: 2021, leagues: [ 235, 236 ], names: [ "Premier League", "First League" ] }
+      - { slug: rwanda, name: "Rwanda", from-year: 2021, leagues: [ 405 ], names: [ "National Soccer League" ] }
+      - { slug: san-marino, name: "San Marino", from-year: 2021, leagues: [ 404 ], names: [ "Campionato" ] }
+      - { slug: saudi-arabia, name: "Saudi Arabia", from-year: 2021, leagues: [ 307, 308 ], names: [ "Pro League", "Division 1" ] }
+      - { slug: scotland, name: "Scotland", from-year: 2021, leagues: [ 179, 180 ], names: [ "Premiership", "Championship" ] }
+      - { slug: senegal, name: "Senegal", from-year: 2021, leagues: [ 403 ], names: [ "Ligue 1" ] }
+      - { slug: serbia, name: "Serbia", from-year: 2021, leagues: [ 286, 287 ], names: [ "Super Liga", "Prva Liga" ] }
+      - { slug: singapore, name: "Singapore", from-year: 2021, leagues: [ 368 ], names: [ "Premier League" ] }
+      - { slug: slovakia, name: "Slovakia", from-year: 2021, leagues: [ 332, 506 ], names: [ "Super Liga", "2. liga" ] }
+      - { slug: slovenia, name: "Slovenia", from-year: 2021, leagues: [ 373, 374 ], names: [ "1. SNL", "2. SNL" ] }
+      - { slug: south-africa, name: "South Africa", from-year: 2021, leagues: [ 288, 289 ], names: [ "Premier Soccer League", "1st Division" ] }
+      - { slug: south-korea, name: "South Korea", from-year: 2021, leagues: [ 292, 293 ], names: [ "K League 1", "K League 2" ] }
+      - { slug: spain, name: "Spain", from-year: 2021, leagues: [ 140, 141 ], names: [ "La Liga", "Segunda División" ] }
+      - { slug: sudan, name: "Sudan", from-year: 2021, leagues: [ 402 ], names: [ "Sudani Premier League" ] }
+      - { slug: suriname, name: "Suriname", from-year: 2021, leagues: [ 568 ], names: [ "Eerste Divisie" ] }
+      - { slug: sweden, name: "Sweden", from-year: 2021, leagues: [ 113, 114 ], names: [ "Allsvenskan", "Superettan" ] }
+      - { slug: switzerland, name: "Switzerland", from-year: 2021, leagues: [ 207, 208 ], names: [ "Super League", "Challenge League" ] }
+      - { slug: syria, name: "Syria", from-year: 2021, leagues: [ 425 ], names: [ "Premier League" ] }
+      - { slug: tajikistan, name: "Tajikistan", from-year: 2021, leagues: [ 571 ], names: [ "Vysshaya Liga" ] }
+      - { slug: tanzania, name: "Tanzania", from-year: 2021, leagues: [ 567 ], names: [ "Ligi kuu Bara" ] }
+      - { slug: thailand, name: "Thailand", from-year: 2021, leagues: [ 296, 297 ], names: [ "Thai League 1", "Thai League 2" ] }
+      - { slug: trinidad-and-tobago, name: "Trinidad And Tobago", from-year: 2021, leagues: [ 591 ], names: [ "Pro League" ] }
+      - { slug: tunisia, name: "Tunisia", from-year: 2021, leagues: [ 202, 828 ], names: [ "Ligue 1", "Ligue 2" ] }
+      - { slug: turkey, name: "Turkey", from-year: 2021, leagues: [ 203, 204 ], names: [ "Süper Lig", "1. Lig" ] }
+      - { slug: turkmenistan, name: "Turkmenistan", from-year: 2021, leagues: [ 636 ], names: [ "Ýokary Liga" ] }
+      - { slug: usa, name: "USA", from-year: 2021, leagues: [ 253, 255 ], names: [ "Major League Soccer", "USL Championship" ] }
+      - { slug: uganda, name: "Uganda", from-year: 2021, leagues: [ 585 ], names: [ "Premier League" ] }
+      - { slug: ukraine, name: "Ukraine", from-year: 2021, leagues: [ 333, 334 ], names: [ "Premier League", "Persha Liga" ] }
+      - { slug: united-arab-emirates, name: "United Arab Emirates", from-year: 2021, leagues: [ 301, 303 ], names: [ "Pro League", "Division 1" ] }
+      - { slug: uruguay, name: "Uruguay", from-year: 2021, leagues: [ 268, 270, 269 ], names: [ "Primera División", "Primera División - Clausura", "Segunda División" ], tiers: [ 1, 1, 2 ] }
+      - { slug: uzbekistan, name: "Uzbekistan", from-year: 2021, leagues: [ 369, 1075 ], names: [ "Super League", "Pro League A" ] }
+      - { slug: venezuela, name: "Venezuela", from-year: 2021, leagues: [ 299, 300 ], names: [ "Primera División", "Segunda División" ] }
+      - { slug: vietnam, name: "Vietnam", from-year: 2021, leagues: [ 340, 637 ], names: [ "V.League 1", "V.League 2" ] }
+      - { slug: wales, name: "Wales", from-year: 2021, leagues: [ 110, 111 ], names: [ "Premier League", "FAW Championship" ] }
+      - { slug: zambia, name: "Zambia", from-year: 2021, leagues: [ 400 ], names: [ "Super League" ] }
+      - { slug: zimbabwe, name: "Zimbabwe", from-year: 2021, leagues: [ 401 ], names: [ "Premier Soccer League" ] }

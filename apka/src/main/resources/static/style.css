@@ -139,14 +139,15 @@ tr.detail table td { border: none; padding: 2px 10px; }
 
 .country-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 6px;
 }
-.country-grid label {
-    display: flex; gap: 8px; align-items: center;
-    padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
-}
 .country-grid input { min-width: 0; }
+.country-card { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.country-card label.check { font-size: 13px; }
+.country-name { background: none; border: none; color: var(--text); font-weight: 700; padding: 2px 0; text-align: left; }
+.country-name:hover { color: var(--accent); }
+.tier { display: inline-block; min-width: 16px; text-align: center; font-size: 11px; border-radius: 4px; background: var(--bg); color: var(--muted); }
 
 .badge { padding: 2px 10px; border-radius: 999px; background: var(--bg); color: var(--muted); font-size: 12px; }
 .badge.running { background: var(--accent-soft); color: var(--accent); }
@@ -213,7 +214,17 @@ tr.hit td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .hist span.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 .odds { color: var(--muted); font-size: 12px; }
 
+/* ---------- lamaki ---------- */
+.daily-filters input[type=number] { min-width: 0; width: 110px; }
+.job-line { flex-basis: 100%; margin: 0; }
+input.odd, input.sunk { min-width: 0; width: 70px; padding: 3px 6px; text-align: right; }
+input.sunk { width: 90px; }
+.stake { font-weight: 700; }
+.warn { color: var(--danger); }
+.ok { color: var(--accent); font-weight: 700; }
+
 @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; }
     .sidebar { position: static; max-height: 260px; }
 }
+.stakes { white-space: normal; min-width: 150px; }

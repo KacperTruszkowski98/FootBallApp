@@ -15,6 +15,7 @@ const state = {
     sub: "pairs",
     countries: [],
     selectedCountries: new Set(),
+    selectedLeagues: new Set(),
     daily: [],
 };
 
@@ -48,6 +49,10 @@ function showView(view) {
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + view));
     if (view === "analysis") loadCompetitions();
     if (view === "daily") loadDaily();
+    if (view === "strategy") {
+        loadStrategy();
+        pollStrategyJob();
+    }
 }
 
 document.querySelectorAll("#mainTabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
@@ -369,37 +374,352 @@ $("dUpdate").onclick = async () => {
     }
 };
 
+// ---------------- Lamaki ----------------
+
+// ustawienia i wpisane kursy zostają w przeglądarce (to tylko wygoda - bez nich widok działa na danych z API)
+const store = {
+    get(key, def) {
+        try {
+            return JSON.parse(localStorage.getItem(key)) ?? def;
+        } catch {
+            return def;
+        }
+    },
+    set(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch {
+        }
+    },
+};
+
+const money = (v) => v == null ? "–" : v.toFixed(2) + " zł";
+
+const RANGES = {today: "Dziś", tomorrow: "Jutro", after: "Pojutrze", week: "Najbliższe dni"};
+state.strategyRange = RANGES[new URLSearchParams(location.search).get("range")] ? new URLSearchParams(location.search).get("range") : "today";
+
+function renderRange() {
+    const box = $("sRange");
+    box.innerHTML = "";
+    Object.entries(RANGES).forEach(([k, label]) => box.appendChild(chip(label, state.strategyRange === k, () => {
+        state.strategyRange = k;
+        renderRange();
+        renderStrategy();
+    })));
+}
+
+/** Mecze do zagrania (jeszcze nierozpoczęte) z wybranego zakresu dni. */
+function playable(list) {
+    const offset = {today: 0, tomorrow: 1, after: 2}[state.strategyRange];
+    const d = new Date();
+    d.setDate(d.getDate() + (offset ?? 0));
+    const day = offset == null ? null : isoDay(d);
+    return list.filter(c => (!c.status || c.status === "NS" || c.status === "TBD") && (!day || fmtDate(c.kickoff) === day));
+}
+
+let strategySeq = 0;
+
+async function loadStrategy() {
+    const seq = ++strategySeq;
+    $("strategyUpcoming").innerHTML = `<p class="muted">Szukam meczów i kursów…</p>`;
+    const p = new URLSearchParams();
+    if ($("sMin").value) p.set("minCommon", $("sMin").value);
+    if ($("sFrom").value) p.set("historyFrom", $("sFrom").value);
+    if ($("sAhead").value) p.set("daysAhead", $("sAhead").value);
+    try {
+        const v = await api("/api/v2/strategy?" + p);
+        if (seq !== strategySeq) return;
+        state.strategy = v;
+        if (!$("sFrom").value) $("sFrom").value = v.settings.historyFrom;
+        if (!$("sTarget").value) $("sTarget").value = store.get("strategy.target", v.target);
+        if (!$("sCap").value) $("sCap").value = store.get("strategy.cap", v.cap);
+        renderStrategy();
+        fillGoals(false);
+    } catch (e) {
+        if (seq === strategySeq) $("strategyUpcoming").innerHTML = `<p class="muted">Błąd: ${esc(e.message)}</p>`;
+    }
+}
+
+["sMin", "sFrom", "sAhead"].forEach(id => $(id).onchange = loadStrategy);
+$("sReload").onclick = loadStrategy;
+$("sTarget").onchange = () => { store.set("strategy.target", +$("sTarget").value); renderStrategy(); };
+$("sCap").onchange = () => { store.set("strategy.cap", +$("sCap").value); renderStrategy(); };
+
+const sunkOf = (league) => store.get("strategy.sunk." + league, 0);
+
+/** Kursy meczu: wpisane ręcznie (np. z Superbetu/STS) mają pierwszeństwo przed najlepszymi z API. */
+function oddsOf(c) {
+    const typed = store.get("strategy.odds." + c.externalId, {});
+    return Object.fromEntries(state.strategy.settings.events.map(e => [e, typed[e] ?? c.odds[e]?.odd ?? null]));
+}
+
+/**
+ * Stawki jak w arkuszu: łącznie (cel + włożone) / (podatek × kurs łączny − 1), rozdzielone tak,
+ * żeby każde z trafień dało tę samą wygraną. Kurs łączny = 1 / Σ(1/kurs).
+ */
+function stakes(odds, sunk) {
+    const values = Object.values(odds);
+    if (!values.length || values.some(o => !(o > 1))) return null;
+    const comb = 1 / values.reduce((a, o) => a + 1 / o, 0);
+    const factor = state.strategy.tax * comb - 1;
+    if (factor <= 0) return {comb, total: null, per: {}};
+    const total = (+$("sTarget").value + sunk) / factor;
+    return {comb, total, per: Object.fromEntries(Object.entries(odds).map(([e, o]) => [e, total * comb / o]))};
+}
+
+function stakeCells(c) {
+    const s = stakes(oddsOf(c), sunkOf(c.league));
+    if (!s) return `<td class="num muted">–</td><td class="muted small">wpisz kursy</td>`;
+    if (s.total == null) return `<td class="num">${s.comb.toFixed(2)}</td><td class="warn small">kurs za niski</td>`;
+    const after = sunkOf(c.league) + s.total;
+    const per = Object.entries(s.per).map(([e, v]) => `${esc(e)}: <span class="stake">${money(v)}</span>`).join("<br>");
+    return `<td class="num">${s.comb.toFixed(2)}</td>
+        <td class="stakes">${per}<br><span class="muted small">razem ${money(s.total)}</span>
+        ${after > +$("sCap").value ? `<br><span class="warn small">po tym zakładzie seria przekroczy limit (${money(after)})</span>` : ""}</td>`;
+}
+
+const goalsSum = (score) => score ? score.split("-").reduce((a, x) => a + +x, 0) : null;
+
+/**
+ * Podwójny lamak: drużyna, która wygrała mecz, strzeliła pierwszego gola, a do przerwy przegrywała.
+ * null = brak kolejności goli (jeszcze nie pobrana albo niezgodna z wynikiem).
+ */
+function isDouble(h) {
+    const winner = {"2/1": "H", "1/2": "A"}[h.htft];
+    if (!winner || !h.goalOrder || h.goalOrder === "?") return null;
+    return h.goalOrder[0] === winner;
+}
+
+/** Wspólne zdarzenia pary + podsumowanie: ile z nich miało over 1.5 do przerwy i ile było podwójnych. */
+function patternsCell(hits) {
+    const n = hits.length;
+    const ht15 = hits.filter(h => goalsSum(h.scoreHT) >= 2).length;
+    const known = hits.filter(h => isDouble(h) !== null);
+    const doubles = known.filter(isDouble).length;
+    const ratio = (k, of) => `<b class="${of && k === of ? "ok" : ""}">${k}/${of}</b>`;
+    return `<span class="hist">${hits.map(h => {
+            const tags = (goalsSum(h.scoreHT) >= 2 ? " o1.5" : "") + (isDouble(h) ? " 2×" : "");
+            return `<span class="on" title="${esc(h.season)} ${esc(h.home)} – ${esc(h.away)} · HT ${esc(h.scoreHT)} · FT ${esc(h.scoreFT)}${h.goalOrder && h.goalOrder !== "?" ? " · gole: " + esc(h.goalOrder) : ""}">${esc(h.htft)} ${fmtDate(h.kickoff).slice(2, 7)}${tags}</span>`;
+        }).join("")}</span>
+        <div class="small muted">HT over 1.5: ${ratio(ht15, n)} · podwójny: ${ratio(doubles, known.length)}${known.length < n ? ` <span title="brak kolejności goli">(+${n - known.length} bez danych)</span>` : ""}</div>`;
+}
+
+function renderStrategy() {
+    const v = state.strategy;
+    if (!v) return;
+    const ev = v.settings.events;
+
+    // ---- mecze do zagrania, z podziałem na ligi ----
+    const up = playable(v.upcoming);
+    const groups = new Map();
+    up.forEach(c => groups.has(c.league) ? groups.get(c.league).push(c) : groups.set(c.league, [c]));
+    const cols = 6 + ev.length;
+    const when = {today: "dziś", tomorrow: "jutro", after: "pojutrze", week: `w najbliższych ${v.settings.daysAhead} dniach`}[state.strategyRange];
+    const showDate = state.strategyRange === "week";
+
+    $("strategyUpcoming").innerHTML = `
+        <h2>Mecze do zagrania ${esc(when)}${up.length ? ` · ${up.length} w ${groups.size} ${groups.size === 1 ? "lidze" : "ligach"}` : ""}</h2>
+        <p class="muted small">Nierozpoczęte mecze par, które od ${esc(v.settings.historyFrom)} miały co najmniej ${v.settings.minCommon}× ${esc(ev.join(" / "))}
+            · kursy podpowiedziane z API (najwyższe u bukmacherów z API) - wpisz swoje ze Superbetu/STS, zostaną zapamiętane
+            · stawki liczone dla celu ${money(+$("sTarget").value)} i kwoty już włożonej w serię danej ligi</p>
+        ${v.warning ? `<p class="warn small">${esc(v.warning)}</p>` : ""}
+        ${up.length ? `<table><thead><tr>
+            <th>${showDate ? "Data" : "Godz."}</th><th>Mecz</th><th class="num" title="Wspólne zdarzenia pary / wszystkie mecze pary od daty">Wspólne</th>
+            <th>Wspólne zdarzenia</th>${ev.map(e => `<th class="num">${esc(e)}</th>`).join("")}
+            <th class="num">Kurs łączny</th><th>Stawki</th></tr></thead><tbody>
+            ${[...groups.entries()].map(([league, rows]) => {
+                const l = v.leagues.find(x => x.name === league);
+                return `<tr class="league-head"><td colspan="${cols}">${esc(league)}
+                    <span class="muted small">· seria: ${l ? l.sinceLastHit : "?"} meczów bez trafienia · włożone w serię: ${money(sunkOf(league))}</span></td></tr>
+                ${rows.map(c => `<tr data-i="${up.indexOf(c)}">
+                    <td>${showDate ? fmtDate(c.kickoff) + " " : ""}${fmtTime(c.kickoff)}</td>
+                    <td><b>${esc(c.home)}</b> – <b>${esc(c.away)}</b></td>
+                    <td class="num"><span class="pill on">${c.common}/${c.meetings}</span></td>
+                    <td>${patternsCell(c.pairHits)}</td>
+                    ${ev.map(e => `<td class="num"><input class="odd" type="number" step="0.5" min="1" data-e="${esc(e)}"
+                        value="${oddsOf(c)[e] ?? ""}" title="${c.odds[e] ? `API: ${c.odds[e].odd} (${esc(c.odds[e].bookmaker)})` : "brak kursu w API"}"></td>`).join("")}
+                    ${stakeCells(c)}
+                </tr>`).join("")}`;
+            }).join("")}
+            </tbody></table>` : `<p class="muted">Brak meczów do zagrania ${esc(when)}.${state.strategyRange !== "week" ? " Sprawdź „Najbliższe dni”." : ""}</p>`}`;
+
+    $("strategyUpcoming").querySelectorAll("input.odd").forEach(input => input.oninput = () => {
+        const tr = input.closest("tr");
+        const c = up[+tr.dataset.i];
+        const typed = store.get("strategy.odds." + c.externalId, {});
+        input.value ? typed[input.dataset.e] = +input.value : delete typed[input.dataset.e];
+        store.set("strategy.odds." + c.externalId, typed);
+        const cells = tr.querySelectorAll("td");
+        cells[cells.length - 1].remove();
+        cells[cells.length - 2].remove();
+        tr.insertAdjacentHTML("beforeend", stakeCells(c));
+    });
+
+    // ---- ligi ----
+    $("strategyLeagues").innerHTML = `
+        <h2>Ligi</h2>
+        <p class="muted small">„Kwalifikujące się” = mecze par, które miały już wcześniej co najmniej ${v.settings.minCommon} wspólne zdarzenia
+            · „Seria” = ile takich meczów minęło od ostatniego trafienia · „Włożone w serię” wpisujesz sam (0 po trafieniu)</p>
+        <table><thead><tr><th>Liga</th><th class="num">Mecze od ${esc(v.settings.historyFrom.slice(0, 4))}</th><th class="num">Zdarzenie w lidze</th>
+            <th class="num">Kwalifikujące się</th><th class="num">Trafione</th><th class="num">Seria</th><th>Ostatnie trafienie</th>
+            <th class="num">Włożone w serię</th></tr></thead><tbody>
+            ${v.leagues.map(l => `<tr>
+                <td>${esc(l.name)}</td><td class="num">${l.matches}</td>
+                <td class="num">${pct(l.eventHits, l.matches)}</td>
+                <td class="num">${l.qualifying}</td>
+                <td class="num">${l.qualifyingHits} <span class="muted small">(${pct(l.qualifyingHits, l.qualifying)})</span></td>
+                <td class="num"><b>${l.sinceLastHit}</b></td>
+                <td>${l.lastHit ? `${fmtDate(l.lastHit.kickoff)} ${esc(l.lastHit.home)} – ${esc(l.lastHit.away)} <span class="event">${esc(l.lastHit.htft)}</span>` : `<span class="muted">–</span>`}</td>
+                <td class="num"><input class="sunk" type="number" min="0" step="1" data-league="${esc(l.name)}" value="${sunkOf(l.name) || ""}" placeholder="0"></td>
+            </tr>`).join("")}
+        </tbody></table>`;
+
+    $("strategyLeagues").querySelectorAll("input.sunk").forEach(input => input.onchange = () => {
+        store.set("strategy.sunk." + input.dataset.league, +input.value || 0);
+        renderStrategy();
+    });
+
+    // ---- rozstrzygnięte ----
+    const rec = v.recent;
+    $("strategyRecent").innerHTML = `
+        <h2>Rozstrzygnięte w ostatnich ${v.settings.daysBack} dniach</h2>
+        ${rec.length ? `<table><thead><tr><th>Data</th><th>Liga</th><th>Mecz</th><th class="num">Wspólne przed</th>
+            <th class="num">HT</th><th class="num">FT</th><th>HT/FT</th><th></th></tr></thead><tbody>
+            ${rec.map(r => `<tr>
+                <td>${fmtDate(r.match.kickoff)}</td><td>${esc(r.league)}</td>
+                <td>${esc(r.match.home)} – ${esc(r.match.away)}</td><td class="num">${r.commonBefore}</td>
+                <td class="num">${esc(r.match.scoreHT ?? "")}</td><td class="num">${esc(r.match.scoreFT ?? "")}</td>
+                <td class="${r.hit ? "event" : ""}">${esc(r.match.htft)}</td>
+                <td>${r.hit ? `<span class="ok">trafiony</span>` : `<span class="muted">nie</span>`}</td>
+            </tr>`).join("")}
+            </tbody></table>` : `<p class="muted">Brak rozstrzygniętych meczów spełniających warunek. Jeśli wczoraj grały Twoje ligi, kliknij „Pobierz nowe wyniki”.</p>`}`;
+}
+
+let strategyPoll;
+let strategyJobRunning = false;
+let goalsTried = false;
+
+/** Dociąga kolejność goli w lamakach (podwójne lamaki); force = także gdy na liście niczego nie brakuje. */
+async function fillGoals(force) {
+    const v = state.strategy;
+    const missing = v && v.upcoming.some(c => c.pairHits.some(h => h.goalOrder == null));
+    if (!force && (goalsTried || !missing)) return;
+    goalsTried = true;
+    const info = $("sJob").textContent;
+    $("sJob").textContent = "Uzupełniam kolejność goli w lamakach (podwójne lamaki)…";
+    try {
+        const r = await api("/api/v2/strategy/goals?historyFrom=" + ($("sFrom").value || ""), {method: "POST"});
+        $("sJob").textContent = info + (r.filled ? ` · kolejność goli: +${r.filled}` : "");
+    } catch (e) {
+        $("sJob").textContent = "Nie udało się pobrać kolejności goli: " + e.message;
+    }
+    loadStrategy();
+}
+
+async function pollStrategyJob() {
+    clearTimeout(strategyPoll);
+    const s = await api("/api/v2/scrape/status");
+    $("sUpdate").disabled = s.running;
+    if (s.running) {
+        $("sJob").textContent = `Pobieram wyniki… sezony ${s.seasonsDone}/${s.seasonsTotal} · nowe mecze: ${s.matchesSaved}`;
+        strategyPoll = setTimeout(pollStrategyJob, 2000);
+    } else if (s.finishedAt) {
+        $("sJob").textContent = `Ostatnie pobieranie: ${fmtDate(s.finishedAt)} ${fmtTime(s.finishedAt)} · nowe mecze: ${s.matchesSaved}`
+            + (s.errors ? ` · błędy: ${s.errors} (szczegóły w zakładce Scraper)` : "");
+        if (strategyJobRunning) fillGoals(true);
+    }
+    strategyJobRunning = s.running;
+}
+
+$("sUpdate").onclick = async () => {
+    try {
+        await api("/api/v2/strategy/update", {method: "POST"});
+    } catch (e) {
+        return alert(e.message);
+    }
+    strategyJobRunning = true;
+    pollStrategyJob();
+};
+
 // ---------------- Scraper ----------------
 
 async function loadScraperConfig() {
     const cfg = await api("/api/v2/scrape/config");
     state.countries = cfg.countries;
+    state.selectedLeagues = new Set(store.get("scraper.leagues", []));
     renderCountries();
 }
 
-function renderCountries() {
-    $("countryList").innerHTML = state.countries.map(c => `
-        <label><input type="checkbox" value="${esc(c.slug)}" ${state.selectedCountries.has(c.slug) ? "checked" : ""}>
-        <span>${esc(c.slug)} <span class="muted small">od ${c.fromYear ?? "?"}${c.leagues ? " · " + esc(c.leagues.join(", ")) : ""}</span></span></label>`).join("");
-    $("countryList").querySelectorAll("input").forEach(i => i.onchange = () => {
-        i.checked ? state.selectedCountries.add(i.value) : state.selectedCountries.delete(i.value);
-    });
+// kraje bez listy lig (BetExplorer z auto-wyborem) zaznacza się w całości, pozostałe - po lidze
+const hasLeagues = (c) => c.leagues.length > 0;
+
+function saveSelection() {
+    store.set("scraper.leagues", [...state.selectedLeagues]);
+    const n = state.selectedLeagues.size + state.selectedCountries.size;
+    $("selCount").textContent = n ? `zaznaczono: ${state.selectedLeagues.size} lig${state.selectedCountries.size ? ` + ${state.selectedCountries.size} krajów` : ""}` : "";
 }
 
-$("btnAll").onclick = () => { state.countries.forEach(c => state.selectedCountries.add(c.slug)); renderCountries(); };
-$("btnNone").onclick = () => { state.selectedCountries.clear(); renderCountries(); };
+function renderCountries() {
+    const q = $("cSearch").value.trim().toLowerCase();
+    const visible = state.countries.filter(c => !q || c.name.toLowerCase().includes(q) || c.slug.includes(q)
+        || c.leagues.some(l => l.name.toLowerCase().includes(q)));
+    $("countryList").innerHTML = visible.map(c => hasLeagues(c)
+        ? `<div class="country-card">
+            <button class="country-name" data-slug="${esc(c.slug)}" title="Zaznacz / odznacz wszystkie ligi">${esc(c.name)}
+                <span class="muted small">od ${c.fromYear ?? "?"}</span></button>
+            ${c.leagues.map(l => `<label class="check"><input type="checkbox" data-ref="${esc(l.ref)}" ${state.selectedLeagues.has(l.ref) ? "checked" : ""}>
+                ${l.tier ? `<span class="tier">${l.tier}</span>` : ""}${esc(l.name)}</label>`).join("")}
+          </div>`
+        : `<div class="country-card"><label class="check"><input type="checkbox" data-slug="${esc(c.slug)}" ${state.selectedCountries.has(c.slug) ? "checked" : ""}>
+            <b>${esc(c.name)}</b> <span class="muted small">od ${c.fromYear ?? "?"} · ligi wybierane automatycznie</span></label></div>`).join("")
+        || `<p class="muted small">Brak krajów pasujących do „${esc(q)}”.</p>`;
+
+    $("countryList").querySelectorAll("input[data-ref]").forEach(i => i.onchange = () => {
+        i.checked ? state.selectedLeagues.add(i.dataset.ref) : state.selectedLeagues.delete(i.dataset.ref);
+        saveSelection();
+    });
+    $("countryList").querySelectorAll("input[data-slug]").forEach(i => i.onchange = () => {
+        i.checked ? state.selectedCountries.add(i.dataset.slug) : state.selectedCountries.delete(i.dataset.slug);
+        saveSelection();
+    });
+    $("countryList").querySelectorAll("button.country-name").forEach(b => b.onclick = () => {
+        const refs = state.countries.find(c => c.slug === b.dataset.slug).leagues.map(l => l.ref);
+        const all = refs.every(r => state.selectedLeagues.has(r));
+        refs.forEach(r => all ? state.selectedLeagues.delete(r) : state.selectedLeagues.add(r));
+        renderCountries();
+    });
+    saveSelection();
+}
+
+function selectTier(tier) {
+    state.countries.forEach(c => c.leagues.filter(l => l.tier === tier).forEach(l => state.selectedLeagues.add(l.ref)));
+    renderCountries();
+}
+
+$("cSearch").oninput = renderCountries;
+$("btnTier1").onclick = () => selectTier(1);
+$("btnTier2").onclick = () => selectTier(2);
+$("btnNone").onclick = () => { state.selectedLeagues.clear(); state.selectedCountries.clear(); renderCountries(); };
+
+/** Kraje, które trzeba odpytać dla bieżącego zaznaczenia. */
+function selectedSlugs() {
+    const slugs = new Set(state.selectedCountries);
+    state.countries.forEach(c => { if (c.leagues.some(l => state.selectedLeagues.has(l.ref))) slugs.add(c.slug); });
+    return [...slugs];
+}
 
 $("btnPlan").onclick = async () => {
-    const slugs = [...state.selectedCountries];
+    const slugs = selectedSlugs();
     $("planPanel").hidden = false;
-    $("planBody").innerHTML = `<p class="muted">Sprawdzam BetExplorer…</p>`;
+    $("planBody").innerHTML = `<p class="muted">Sprawdzam dostępne sezony…</p>`;
     const plans = slugs.length
         ? (await Promise.all(slugs.map(s => api("/api/v2/scrape/plan?country=" + encodeURIComponent(s))))).flat()
         : await api("/api/v2/scrape/plan");
+    const wanted = (s) => !state.selectedLeagues.size || state.selectedCountries.has(s.countrySlug) || state.selectedLeagues.has(s.leagueRef);
     $("planBody").innerHTML = `<table><thead><tr><th>Kraj</th><th>Ligi</th><th>Sezony</th><th>Inne dostępne ligi</th></tr></thead><tbody>
         ${plans.map(p => {
             const byLeague = {};
-            p.seasons.forEach(s => (byLeague[s.league] ??= []).push(s.seasonLabel));
+            p.seasons.filter(wanted).forEach(s => (byLeague[s.league] ??= []).push(s.seasonLabel));
             return `<tr><td>${esc(p.country)}</td>
                 <td>${p.error ? `<span style="color:var(--danger)">${esc(p.error)}</span>` : esc(p.selectedLeagues.join(", "))}</td>
                 <td style="white-space:normal">${Object.entries(byLeague).map(([l, s]) => `<b>${esc(l)}</b>: ${esc(s.join(", "))}`).join("<br>")}</td>
@@ -407,17 +727,32 @@ $("btnPlan").onclick = async () => {
         }).join("")}</tbody></table>`;
 };
 
-$("btnStart").onclick = async () => {
+async function startScrape(body) {
     try {
         await api("/api/v2/scrape/start", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({countries: [...state.selectedCountries], latestOnly: $("latestOnly").checked}),
+            body: JSON.stringify({...body, latestOnly: $("latestOnly").checked}),
         });
     } catch (e) {
         alert(e.message);
     }
     pollStatus();
+}
+
+$("btnStart").onclick = () => {
+    if (!state.selectedLeagues.size && !state.selectedCountries.size) {
+        return alert("Zaznacz co najmniej jedną ligę albo użyj „Pobierz wszystko”.");
+    }
+    startScrape({countries: [...state.selectedCountries], leagues: [...state.selectedLeagues]});
+};
+
+$("btnStartAll").onclick = () => {
+    const leagues = state.countries.reduce((a, c) => a + Math.max(c.leagues.length, 1), 0);
+    const what = $("latestOnly").checked ? "bieżące sezony" : "wszystkie sezony";
+    if (confirm(`Pobrać ${what} wszystkich lig (${leagues}) ze wszystkich krajów (${state.countries.length})?`)) {
+        startScrape({countries: [], leagues: []});
+    }
 };
 
 $("btnStop").onclick = async () => { await api("/api/v2/scrape/cancel", {method: "POST"}); pollStatus(); };
@@ -435,6 +770,7 @@ async function pollStatus() {
         : "";
     $("jobLog").textContent = s.log.join("\n");
     $("btnStart").disabled = s.running;
+    $("btnStartAll").disabled = s.running;
     $("btnStop").disabled = !s.running;
     if (s.running) pollTimer = setTimeout(pollStatus, 2000);
 }
@@ -442,6 +778,7 @@ async function pollStatus() {
 // ---------------- start ----------------
 
 renderEvents();
+renderRange();
 loadScraperConfig();
 showView(new URLSearchParams(location.search).get("view") || "daily");
 pollStatus();

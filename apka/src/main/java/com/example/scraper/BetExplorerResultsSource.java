@@ -24,7 +24,8 @@ public class BetExplorerResultsSource implements ResultsSource {
     @Override
     public List<ConfiguredCountry> countries() {
         return properties.countries().stream()
-                .map(c -> new ConfiguredCountry(c.slug(), c.fromYear(), c.leagues()))
+                .map(c -> new ConfiguredCountry(c.slug(), c.slug(), c.fromYear(), c.leagues() == null ? List.of()
+                        : c.leagues().stream().map(l -> new ConfiguredLeague(l, l, null)).toList()))
                 .toList();
     }
 

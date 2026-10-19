@@ -37,4 +37,8 @@ public class MatchEntity {
     private String stage;
     private String seasonLabel;
     private LocalDateTime kickoff;
+
+    // Kolejność goli w 90 minutach: H = gospodarz, A = gość (np. "HAAH"); "?" = dane z API niezgodne z wynikiem.
+    // Uzupełniana na żądanie (zakładka Lamaki) - tylko dla meczów z wybranym zdarzeniem HT/FT.
+    private String goalOrder;
 }

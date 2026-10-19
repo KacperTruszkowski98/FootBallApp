@@ -21,6 +21,46 @@ spring:
   config:
     import: classpath:api-football-leagues.yaml
 
+# Zakładka "Lamaki" (/api/v2/strategy): mecze par, które od history-from miały już min-common razy zdarzenie
+strategy:
+  events: [ "1/2", "2/1" ]
+  min-common: 2
+  history-from: 2022-01-01
+  # progresja: zysk na czysto z serii, limit włożonych pieniędzy w serię, mnożnik po 12% podatku
+  target: 100
+  cap: 3500
+  tax: 0.88
+  days-ahead: 7
+  days-back: 7
+  # country/league dokładnie jak w bazie; slug = kraj z api-football-leagues.yaml (do dociągania wyników)
+  leagues:
+    - { slug: paraguay, country: Paraguay, league: Division Profesional, name: Paragwaj Primera }
+    - { slug: turkey, country: Turkey, league: Süper Lig, name: Turcja Süper Lig }
+    - { slug: turkey, country: Turkey, league: 1. Lig, name: Turcja 1. Lig }
+    - { slug: hungary, country: Hungary, league: NB I, name: Węgry NB I }
+    - { slug: saudi-arabia, country: Saudi Arabia, league: Pro League, name: Arabia Saudyjska }
+    - { slug: india, country: India, league: Indian Super League, name: Indie ISL }
+    - { slug: scotland, country: Scotland, league: Premiership, name: Szkocja Premiership }
+    - { slug: croatia, country: Croatia, league: HNL, name: Chorwacja HNL }
+    - { slug: austria, country: Austria, league: Bundesliga, name: Austria Bundesliga }
+    - { slug: israel, country: Israel, league: Ligat Ha'al, name: Izrael Ligat Ha'al }
+    - { slug: germany, country: Germany, league: Bundesliga, name: Niemcy Bundesliga }
+    - { slug: bolivia, country: Bolivia, league: Primera División, name: Boliwia }
+    - { slug: brazil, country: Brazil, league: Serie A, name: Brazylia A }
+    - { slug: brazil, country: Brazil, league: Serie B, name: Brazylia B }
+    - { slug: slovenia, country: Slovenia, league: 1. SNL, name: Słowenia }
+    - { slug: switzerland, country: Switzerland, league: Super League, name: Szwajcaria Super League }
+    - { slug: switzerland, country: Switzerland, league: Challenge League, name: Szwajcaria Challenge League }
+    - { slug: denmark, country: Denmark, league: Superliga, name: Dania }
+    - { slug: serbia, country: Serbia, league: Super Liga, name: Serbia }
+    - { slug: northern-ireland, country: Northern Ireland, league: Premiership, name: Irlandia Płn. Premiership }
+    - { slug: united-arab-emirates, country: United Arab Emirates, league: Pro League, name: ZEA }
+    - { slug: cyprus, country: Cyprus, league: 1. Division, name: Cypr }
+    - { slug: ireland, country: Ireland, league: Premier Division, name: Irlandia }
+    - { slug: australia, country: Australia, league: A-League, name: Australia }
+    - { slug: qatar, country: Qatar, league: Stars League, name: Katar }
+    - { slug: greece, country: Greece, league: Super League 1, name: Grecja Super League }
+
 # Pobieranie wyników (/api/v2/scrape, front pod http://localhost:8080/)
 scraper:
   # api-football (licencjonowane API, domyślnie) | betexplorer (scraping strony)

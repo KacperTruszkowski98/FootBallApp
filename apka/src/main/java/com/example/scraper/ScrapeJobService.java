@@ -9,8 +9,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,21 +36,38 @@ public class ScrapeJobService {
     private final AtomicBoolean cancelRequested = new AtomicBoolean();
     private volatile JobStatus status = JobStatus.idle();
 
-    public synchronized JobStatus start(Collection<String> slugs, boolean latestOnly) {
+    /**
+     * @param slugs      kraje do pobrania (puste = wszystkie z konfiguracji)
+     * @param leagueRefs pojedyncze ligi z innych krajów; kraj podany w slugs pobiera się w całości.
+     *                   Nic nie podane = wszystkie kraje i ligi z konfiguracji
+     */
+    public synchronized JobStatus start(Collection<String> slugs, Collection<String> leagueRefs, boolean latestOnly) {
         if (status.running()) {
             throw new IllegalStateException("Scraping już trwa");
         }
 
-        List<String> configured = source.countries().stream().map(ResultsSource.ConfiguredCountry::slug).toList();
-        List<String> countries = (slugs == null || slugs.isEmpty()) ? configured : List.copyOf(slugs);
-        countries.stream().filter(s -> !configured.contains(s)).findFirst().ifPresent(s -> {
+        List<ResultsSource.ConfiguredCountry> config = source.countries();
+        List<String> configured = config.stream().map(ResultsSource.ConfiguredCountry::slug).toList();
+        Set<String> leagues = leagueRefs == null ? Set.of() : Set.copyOf(leagueRefs);
+
+        // kraj -> ligi do pobrania (pusty zbiór = wszystkie ligi kraju)
+        Map<String, Set<String>> selected = new LinkedHashMap<>();
+        (slugs == null ? List.<String>of() : slugs).forEach(s -> selected.put(s, Set.of()));
+        for (ResultsSource.ConfiguredCountry c : config) {
+            if (selected.containsKey(c.slug())) continue;
+            Set<String> refs = new LinkedHashSet<>();
+            c.leagues().stream().map(ResultsSource.ConfiguredLeague::ref).filter(leagues::contains).forEach(refs::add);
+            if (!refs.isEmpty()) selected.put(c.slug(), refs);
+        }
+        if (selected.isEmpty()) configured.forEach(s -> selected.put(s, Set.of()));
+        selected.keySet().stream().filter(s -> !configured.contains(s)).findFirst().ifPresent(s -> {
             throw new IllegalArgumentException("Brak kraju w konfiguracji: " + s);
         });
 
         cancelRequested.set(false);
         status = new JobStatus(true, LocalDateTime.now(), null, "Wyszukiwanie lig i sezonów...",
                 0, 0, 0, 0, new LinkedList<>());
-        runner.submit(() -> run(countries, latestOnly));
+        runner.submit(() -> run(selected, latestOnly));
         return status;
     }
 
@@ -59,20 +80,25 @@ public class ScrapeJobService {
         return status;
     }
 
-    private void run(List<String> countries, boolean latestOnly) {
+    private void run(Map<String, Set<String>> countries, boolean latestOnly) {
         ExecutorService pool = Executors.newFixedThreadPool(properties.threads());
         try {
             List<LeagueSeason> tasks = new ArrayList<>();
             appendLog("Źródło: " + source.name());
-            for (String country : countries) {
+            for (String country : countries.keySet()) {
+                Set<String> leagues = countries.get(country);
                 if (cancelRequested.get()) break;
                 CountryPlan plan = source.plan(country);
                 if (plan.error() != null) {
                     appendLog("❌ " + country + ": " + plan.error());
                     continue;
                 }
-                List<LeagueSeason> seasons = latestOnly ? latestPerLeague(plan.seasons()) : plan.seasons();
-                appendLog("🔎 " + plan.country() + ": " + plan.selectedLeagues() + " - sezonów: " + seasons.size());
+                List<LeagueSeason> seasons = plan.seasons().stream()
+                        .filter(s -> leagues.isEmpty() || leagues.contains(s.leagueRef()))
+                        .toList();
+                if (latestOnly) seasons = recentPerLeague(seasons);
+                appendLog("🔎 " + plan.country() + ": " + (leagues.isEmpty() ? plan.selectedLeagues()
+                        : seasons.stream().map(LeagueSeason::league).distinct().toList()) + " - sezonów: " + seasons.size());
                 tasks.addAll(seasons);
             }
             update(s -> s.withTotal(tasks.size()));
@@ -100,11 +126,14 @@ public class ScrapeJobService {
         }
     }
 
-    private static List<LeagueSeason> latestPerLeague(List<LeagueSeason> seasons) {
-        return seasons.stream()
-                .collect(java.util.stream.Collectors.toMap(LeagueSeason::leagueRef, s -> s,
-                        (a, b) -> a.startYear() >= b.startYear() ? a : b, java.util.LinkedHashMap::new))
-                .values().stream().toList();
+    /**
+     * Dwa ostatnie sezony każdej ligi: API potrafi wystawić przyszły sezon (jeszcze bez meczów),
+     * zanim skończy się bieżący - sam najnowszy pominąłby wtedy świeże wyniki.
+     */
+    private static List<LeagueSeason> recentPerLeague(List<LeagueSeason> seasons) {
+        java.util.Map<String, Integer> latest = new java.util.HashMap<>();
+        seasons.forEach(s -> latest.merge(s.leagueRef(), s.startYear(), Math::max));
+        return seasons.stream().filter(s -> s.startYear() >= latest.get(s.leagueRef()) - 1).toList();
     }
 
     private synchronized void update(java.util.function.UnaryOperator<JobStatus> fn) {

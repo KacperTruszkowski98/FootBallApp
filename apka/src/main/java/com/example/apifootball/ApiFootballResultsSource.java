@@ -51,7 +51,10 @@ public class ApiFootballResultsSource implements ResultsSource {
     @Override
     public List<ConfiguredCountry> countries() {
         return properties.apiFootball().countries().stream()
-                .map(c -> new ConfiguredCountry(c.slug(), c.fromYear(), c.leagues().stream().map(String::valueOf).toList()))
+                .map(c -> new ConfiguredCountry(c.slug(), c.name() == null ? c.slug() : c.name(), c.fromYear(),
+                        java.util.stream.IntStream.range(0, c.leagues().size())
+                                .mapToObj(i -> new ConfiguredLeague(String.valueOf(c.leagues().get(i)), c.leagueName(i), c.tier(i)))
+                                .toList()))
                 .toList();
     }
 

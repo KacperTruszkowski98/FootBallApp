@@ -48,12 +48,26 @@ public record ScraperProperties(
 
     /**
      * @param slug     dowolny identyfikator kraju (używany w UI i przy starcie scrapingu)
+     * @param name     nazwa kraju do wyświetlenia
      * @param fromYear pierwszy sezon (rok startu, 2024/2025 -> 2024)
-     * @param leagues  id lig z API-Football (GET /leagues?country=...)
+     * @param leagues  id lig z API-Football (GET /leagues?country=...), od najwyższego poziomu
+     * @param names    nazwy lig w tej samej kolejności (do listy w UI - bez odpytywania API)
+     * @param tiers    poziom rozgrywek każdej ligi; brak = kolejność na liście (1, 2, ...)
      */
-    public record ApiCountry(String slug, Integer fromYear, Integer toYear, List<Integer> leagues) {
+    public record ApiCountry(String slug, String name, Integer fromYear, Integer toYear, List<Integer> leagues,
+                             List<String> names, List<Integer> tiers) {
         public ApiCountry {
             if (leagues == null) leagues = List.of();
+            if (names == null) names = List.of();
+            if (tiers == null) tiers = List.of();
+        }
+
+        public String leagueName(int index) {
+            return index < names.size() ? names.get(index) : String.valueOf(leagues.get(index));
+        }
+
+        public int tier(int index) {
+            return index < tiers.size() ? tiers.get(index) : index + 1;
         }
     }
 

@@ -11,6 +11,7 @@
     <h1>⚽ FootballApp</h1>
     <nav class="tabs" id="mainTabs">
         <button data-view="daily" class="active">Mecze dnia</button>
+        <button data-view="strategy">Lamaki</button>
         <button data-view="analysis">Analiza</button>
         <button data-view="scraper">Scraper</button>
     </nav>
@@ -46,6 +47,47 @@
             </div>
         </div>
         <div class="panel" id="dailyResult"></div>
+    </section>
+
+    <!-- ================= LAMAKI ================= -->
+    <section id="view-strategy" class="view">
+        <div class="panel daily-filters">
+            <div class="field">
+                <span class="label">Pokaż mecze</span>
+                <div class="chips" id="sRange"></div>
+            </div>
+            <label class="field">
+                <span class="label">Min. wspólnych zdarzeń pary</span>
+                <input type="number" id="sMin" min="1" max="5" value="2">
+            </label>
+            <label class="field">
+                <span class="label">Licz wspólne od</span>
+                <input type="date" id="sFrom">
+            </label>
+            <label class="field">
+                <span class="label">Dni do przodu</span>
+                <input type="number" id="sAhead" min="1" max="14" value="7">
+            </label>
+            <label class="field">
+                <span class="label">Cel serii (zł)</span>
+                <input type="number" id="sTarget" min="1" step="10">
+            </label>
+            <label class="field">
+                <span class="label">Limit serii (zł)</span>
+                <input type="number" id="sCap" min="1" step="100">
+            </label>
+            <div class="field">
+                <span class="label">Wyniki w bazie</span>
+                <div class="row nowrap">
+                    <button id="sUpdate" title="Dociąga bieżące sezony krajów z ligami strategii">⟳ Pobierz nowe wyniki</button>
+                    <button class="ghost" id="sReload">Odśwież listę</button>
+                </div>
+            </div>
+            <p id="sJob" class="muted small job-line"></p>
+        </div>
+        <div class="panel" id="strategyUpcoming"></div>
+        <div class="panel" id="strategyLeagues"></div>
+        <div class="panel" id="strategyRecent"></div>
     </section>
 
     <!-- ================= ANALIZA ================= -->
@@ -94,19 +136,23 @@
     <section id="view-scraper" class="view">
         <div class="panel">
             <div class="row between">
-                <h2>Kraje z konfiguracji</h2>
+                <h2>Kraje i ligi</h2>
                 <div class="row">
-                    <button class="ghost" id="btnAll">Zaznacz wszystkie</button>
+                    <input type="search" id="cSearch" placeholder="Szukaj kraju / ligi…">
+                    <button class="ghost" id="btnTier1">Wszystkie 1. ligi</button>
+                    <button class="ghost" id="btnTier2">Wszystkie 2. ligi</button>
                     <button class="ghost" id="btnNone">Odznacz</button>
                 </div>
             </div>
-            <p class="muted small">Lista pochodzi z <code>application.yaml</code> → <code>scraper.countries</code>.
-                Nic nie zaznaczone = wszystkie kraje. Ponowne uruchomienie dociąga tylko nowe mecze.</p>
+            <p class="muted small">Zaznacz ligi (kliknięcie nazwy kraju zaznacza wszystkie jego ligi) i kliknij „Pobierz zaznaczone”.
+                Ponowne pobieranie dociąga tylko nowe mecze. Lista pochodzi z <code>api-football-leagues.yaml</code>.</p>
             <div id="countryList" class="country-grid"></div>
             <div class="row actions">
                 <button id="btnPlan" class="ghost">Podgląd: co zostanie pobrane</button>
                 <label class="check"><input type="checkbox" id="latestOnly"> tylko bieżące sezony</label>
-                <button id="btnStart">▶ Start</button>
+                <span id="selCount" class="muted small"></span>
+                <button id="btnStart">▶ Pobierz zaznaczone</button>
+                <button id="btnStartAll" class="ghost">Pobierz wszystko</button>
                 <button id="btnStop" class="danger">■ Stop</button>
             </div>
         </div>

@@ -23,7 +23,15 @@ public interface ResultsSource {
     /** Pobiera i zapisuje mecze jednego sezonu ligi; mecze już zapisane są pomijane. */
     ScrapeResult scrape(LeagueSeason season, ExecutorService executor, BooleanSupplier cancelled) throws Exception;
 
-    record ConfiguredCountry(String slug, Integer fromYear, List<String> leagues) {
+    /** leagues puste = źródło samo wybiera ligi (BetExplorer bez listy lig w konfiguracji). */
+    record ConfiguredCountry(String slug, String name, Integer fromYear, List<ConfiguredLeague> leagues) {
+    }
+
+    /**
+     * @param ref  identyfikator ligi w źródle - ten sam co {@link com.example.scraper.LeagueSeason#leagueRef()}
+     * @param tier poziom rozgrywek (1, 2) albo null, gdy nieznany
+     */
+    record ConfiguredLeague(String ref, String name, Integer tier) {
     }
 
     record ScrapeResult(int saved, int skipped, int failed, List<String> stages) {

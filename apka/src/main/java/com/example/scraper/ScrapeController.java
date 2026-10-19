@@ -32,11 +32,12 @@ public class ScrapeController {
         return List.of(source.plan(country));
     }
 
-    /** Startuje scraping. Bez listy krajów - wszystkie z konfiguracji. */
+    /** Startuje scraping. Bez krajów i lig - wszystko z konfiguracji. */
     @PostMapping("/start")
     public ResponseEntity<?> start(@RequestBody(required = false) StartRequest request) {
         try {
-            return ResponseEntity.ok(jobs.start(request == null ? null : request.countries(), request != null && request.latestOnly()));
+            return ResponseEntity.ok(request == null ? jobs.start(null, null, false)
+                    : jobs.start(request.countries(), request.leagues(), request.latestOnly()));
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
         }
@@ -53,7 +54,11 @@ public class ScrapeController {
         return jobs.status();
     }
 
-    /** latestOnly = tylko najnowszy sezon każdej ligi (szybkie dociągnięcie świeżych wyników). */
-    public record StartRequest(List<String> countries, boolean latestOnly) {
+    /**
+     * @param countries  kraje (slugi) - wszystkie ich ligi
+     * @param leagues    pojedyncze ligi (ref z /config), np. ["179", "180"]
+     * @param latestOnly tylko dwa ostatnie sezony każdej ligi (szybkie dociągnięcie świeżych wyników)
+     */
+    public record StartRequest(List<String> countries, List<String> leagues, boolean latestOnly) {
     }
 }
