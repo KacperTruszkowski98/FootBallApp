@@ -289,8 +289,30 @@ async function loadDaily() {
         if (seq !== dailySeq) return;
         state.daily = list;
         renderDaily();
+        loadDailyOdds(seq, $("dDate").value);
     } catch (e) {
         if (seq === dailySeq) $("dailyResult").innerHTML = `<p class="muted">Błąd: ${esc(e.message)}</p>`;
+    }
+}
+
+/** Kursy 1X2 doładowywane po pokazaniu listy (pierwszy raz dla dnia trwa nawet minutę, potem są zapamiętane). */
+async function loadDailyOdds(seq, date) {
+    if (!state.daily.some(v => v.tracked && v.match.odd1 == null)) return;
+    state.dailyOddsLoading = true;
+    renderDaily();
+    try {
+        const odds = await api("/api/v2/daily/odds?date=" + date);
+        if (seq !== dailySeq) return;
+        state.daily.forEach(v => {
+            const o = odds[v.match.externalId];
+            if (o) [v.match.odd1, v.match.oddX, v.match.odd2] = o;
+        });
+    } catch (e) {
+        console.warn("Kursy 1X2:", e.message);
+    }
+    if (seq === dailySeq) {
+        state.dailyOddsLoading = false;
+        renderDaily();
     }
 }
 
@@ -320,7 +342,7 @@ function renderDaily() {
     const ev = [...state.events].join(", ") || "—";
 
     $("dailyResult").innerHTML = `
-        <p class="muted small">${list.length} meczów · ${withHits} par miało wcześniej zdarzenie (${esc(ev)}) · kliknij mecz, aby zobaczyć historię pary</p>
+        <p class="muted small">${list.length} meczów · ${withHits} par miało wcześniej zdarzenie (${esc(ev)}) · kliknij mecz, aby zobaczyć historię pary${state.dailyOddsLoading ? " · kursy 1X2 ładują się…" : ""}</p>
         <table><thead><tr>
             <th>Godz.</th><th>Mecz</th><th class="num">Wynik</th><th class="num">1 · X · 2</th>
             <th class="num" title="Ile razy ta para miała zdarzenie / ile razy grała">Para</th>

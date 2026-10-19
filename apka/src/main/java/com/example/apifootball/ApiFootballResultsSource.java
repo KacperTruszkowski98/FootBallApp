@@ -131,6 +131,22 @@ public class ApiFootballResultsSource implements ResultsSource {
         return new ScrapeResult(entities.size(), skipped, 0, List.copyOf(stages));
     }
 
+    /** Zapisuje nowe mecze jednego sezonu ligi z konfiguracji (np. świeżo zakończone mecze dnia). */
+    public ScrapeResult scrapeSeason(int leagueId, int year) throws Exception {
+        String slug = properties.apiFootball().countries().stream()
+                .filter(c -> c.leagues().contains(leagueId))
+                .map(ScraperProperties.ApiCountry::slug)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Liga " + leagueId + " spoza konfiguracji"));
+        CountryPlan plan = plan(slug);
+        LeagueSeason season = plan.seasons().stream()
+                .filter(s -> s.path().equals(leagueId + ":" + year))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(plan.error() != null ? plan.error()
+                        : "Brak sezonu " + year + " ligi " + leagueId + " w konfiguracji (from-year?)"));
+        return scrape(season, null, () -> false);
+    }
+
     private MatchEntity toEntity(LeagueSeason season, JsonNode f, String stage) {
         String round = f.path("league").path("round").asText();
         JsonNode score = f.path("score");

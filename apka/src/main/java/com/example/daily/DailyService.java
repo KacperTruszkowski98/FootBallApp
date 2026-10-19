@@ -67,6 +67,10 @@ public class DailyService {
         return result;
     }
 
+    public Map<String, double[]> odds(LocalDate date) throws Exception {
+        return source.odds(date);
+    }
+
     private static TeamStats teamStats(List<MatchEntity> history, String team, String league, Set<String> wanted) {
         int matches = 0, hits = 0;
         for (MatchEntity h : history) {

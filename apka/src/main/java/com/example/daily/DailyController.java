@@ -25,4 +25,11 @@ public class DailyController {
         LocalDate day = date != null ? date : LocalDate.now(ZoneId.of("Europe/Warsaw"));
         return service.daily(day, events == null ? List.of() : events, onlyTracked);
     }
+
+    /** Kursy 1X2 meczów dnia: externalId -> [1, X, 2]. Pierwsze wywołanie dla dnia może trwać do minuty, kolejne są szybkie. */
+    @GetMapping("/odds")
+    public java.util.Map<String, double[]> odds(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) throws Exception {
+        return service.odds(date != null ? date : LocalDate.now(ZoneId.of("Europe/Warsaw")));
+    }
 }
