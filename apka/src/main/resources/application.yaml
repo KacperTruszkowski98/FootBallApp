@@ -4,8 +4,14 @@ spring:
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # pobieranie wyników działa w kilku wątkach równolegle z zapytaniami z frontu
+      maximum-pool-size: 20
 
   jpa:
+    # połączenie z bazą tylko na czas zapytania do bazy, nie na całe żądanie HTTP -
+    # inaczej czekanie na API-Football (zakładka Lamaki, Mecze dnia) blokuje pulę połączeń
+    open-in-view: false
     hibernate:
       ddl-auto: update
     properties:
