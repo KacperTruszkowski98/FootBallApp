@@ -281,7 +281,7 @@ let dailySeq = 0;
 
 async function loadDaily() {
     const seq = ++dailySeq;
-    $("dailyResult").innerHTML = `<p class="muted">Pobieram mecze z BetExplorera…</p>`;
+    $("dailyResult").innerHTML = `<p class="muted">Pobieram mecze dnia…</p>`;
     const p = new URLSearchParams({date: $("dDate").value, onlyTracked: $("dTracked").checked});
     state.events.forEach(e => p.append("events", e));
     try {
