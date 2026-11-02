@@ -2,7 +2,7 @@ package com.example.history;
 
 import com.example.MatchEntity;
 import com.example.MatchRepository;
-import com.example.analytics.AnalyticsService.MatchView;
+import com.example.dto.MatchView;
 import com.example.apifootball.FinishedMatchesRecorder;
 import com.example.source.DailySource;
 import com.example.strategy.StrategyProperties;
@@ -130,6 +130,11 @@ public class HistoryService {
         return result;
     }
 
+    /** Dopasowanie znormalizowanego fragmentu do kraju/ligi (także polska nazwa kraju) - dla innych zakładek. */
+    public static boolean matchesSearch(String needle, String country, String league) {
+        return matches(needle, country, league, Map.of());
+    }
+
     private static boolean matches(String needle, String country, String league, Map<String, String> labels) {
         return needle == null || normalize(country + ": " + league + " "
                 + labels.getOrDefault(key(country, league), "") + " "
@@ -182,7 +187,7 @@ public class HistoryService {
         return new EventMatch(m.getCountry(), MatchView.of(m));
     }
 
-    static String normalize(String s) {
+    public static String normalize(String s) {
         return java.text.Normalizer.normalize(s.toLowerCase(Locale.ROOT).replace('ł', 'l').replace('ı', 'i'),
                 java.text.Normalizer.Form.NFD).replaceAll("\\p{M}", "").replace('-', ' ');
     }

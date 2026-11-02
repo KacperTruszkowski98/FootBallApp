@@ -251,3 +251,6 @@ input.sunk { width: 90px; }
 .droughts .drought { margin-left: 0; }
 .droughts .muted { margin-right: 10px; }
 .hist-link { margin-left: 8px; font-weight: 400; color: var(--accent); text-decoration: none; }
+.hist span i { font-style: normal; font-size: 9px; opacity: .7; margin-left: 2px; }
+.pair-table tr.four-row td { background: var(--accent-soft); }
+td.year-hit { color: var(--accent); font-weight: 700; }

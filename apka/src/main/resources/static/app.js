@@ -68,24 +68,14 @@ function showView(view) {
     state.view = view;
     document.querySelectorAll("#mainTabs button").forEach(x => x.classList.toggle("active", x.dataset.view === view));
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + view));
-    if (view === "analysis") loadCompetitions();
     if (view === "daily") loadDaily();
     if (view === "history") loadHistory();
-    if (view === "strategy") {
-        loadStrategy();
-        pollStrategyJob();
-    }
+    if (view === "months") loadMonths();
 }
 
 document.querySelectorAll("#mainTabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
 
-document.querySelectorAll("#subTabs button").forEach(b => b.onclick = () => {
-    document.querySelectorAll("#subTabs button").forEach(x => x.classList.toggle("active", x === b));
-    state.sub = b.dataset.sub;
-    refresh();
-});
-
-// ---------------- zdarzenia HT/FT (wspólne dla Analizy i Meczów dnia) ----------------
+// ---------------- zdarzenia HT/FT (Mecze dnia) ----------------
 
 function renderEvents() {
     document.querySelectorAll(".events-presets").forEach(box => {
@@ -108,178 +98,7 @@ function renderEvents() {
 function setEvents(events) {
     state.events = events;
     renderEvents();
-    state.view === "daily" ? loadDaily() : refresh();
-}
-
-// ---------------- Analiza: lista lig ----------------
-
-async function loadCompetitions() {
-    state.competitions = await api("/api/v2/analytics/competitions");
-    if (!state.country && state.competitions.length) {
-        state.country = state.competitions[0].country;
-        state.league = state.competitions[0].leagues[0]?.league ?? null;
-    }
-    renderNav();
-    onSelectionChange();
-}
-
-function renderNav() {
-    const q = $("leagueSearch").value.trim().toLowerCase();
-    const html = state.competitions.map(c => {
-        const leagues = c.leagues.filter(l => !q || c.country.toLowerCase().includes(q) || l.league.toLowerCase().includes(q));
-        if (!leagues.length) return "";
-        const total = c.leagues.reduce((a, l) => a + l.matches, 0);
-        const countryActive = state.country === c.country && state.league === null;
-        return `<div class="nav-country">
-            <button class="${countryActive ? "active" : ""}" data-country="${esc(c.country)}" title="Wszystkie ligi kraju">
-                <span>${esc(c.country)}</span><span class="nav-count">${total}</span></button>
-            ${leagues.map(l => `<button class="nav-league ${state.country === c.country && state.league === l.league ? "active" : ""}"
-                data-country="${esc(c.country)}" data-league="${esc(l.league)}">
-                <span>${esc(l.league)}</span><span class="nav-count">${l.matches}</span></button>`).join("")}
-        </div>`;
-    }).join("");
-    $("leagueNav").innerHTML = html || `<p class="muted small">Brak lig w bazie.</p>`;
-    $("leagueNav").querySelectorAll("button").forEach(b => b.onclick = () => {
-        state.country = b.dataset.country;
-        state.league = b.dataset.league ?? null;
-        renderNav();
-        onSelectionChange();
-    });
-}
-
-$("leagueSearch").oninput = renderNav;
-
-function selectedLeagues() {
-    const c = state.competitions.find(c => c.country === state.country);
-    if (!c) return [];
-    return state.league ? c.leagues.filter(x => x.league === state.league) : c.leagues;
-}
-
-function onSelectionChange() {
-    $("aTitle").textContent = state.country ? `${state.country} · ${state.league ?? "wszystkie ligi"}` : "Wybierz ligę z listy";
-
-    const leagues = selectedLeagues();
-    const stages = [...new Set(leagues.flatMap(l => l.stages))].sort();
-    // domyślnie tylko faza zasadnicza (Regular Season / Apertura / Clausura) - bez grup po podziale i play-offów
-    state.stages = new Set(stages.filter(s => !/play|relegation|final|qualif|reclasific|group/i.test(s)));
-    if (!state.stages.size) state.stages = new Set(stages);
-    renderStages(stages);
-
-    const seasons = new Map();
-    leagues.forEach(l => Object.entries(l.seasons).forEach(([y, label]) => seasons.set(+y, label)));
-    const years = [...seasons.keys()].sort();
-    $("fFrom").innerHTML = years.map(y => `<option value="${y}">${esc(seasons.get(y))}</option>`).join("");
-    refresh();
-}
-
-function renderStages(stages) {
-    const box = $("fStages");
-    box.innerHTML = "";
-    stages.forEach(s => box.appendChild(chip(s, state.stages.has(s), () => {
-        state.stages.has(s) ? state.stages.delete(s) : state.stages.add(s);
-        renderStages(stages);
-        refresh();
-    })));
-}
-
-function query(extra = {}) {
-    const p = new URLSearchParams();
-    p.set("country", state.country);
-    if (state.league) p.set("league", state.league);
-    p.set("fromSeason", $("fFrom").value || 0);
-    state.stages.forEach(s => p.append("stages", s));
-    state.events.forEach(e => p.append("events", e));
-    Object.entries(extra).forEach(([k, v]) => p.set(k, v));
-    return p.toString();
-}
-
-["fFrom", "fMin"].forEach(id => $(id).onchange = refresh);
-
-// ---------------- Analiza: widoki ----------------
-
-let refreshSeq = 0;
-
-async function refresh() {
-    const out = $("result");
-    if (!state.country) {
-        out.innerHTML = `<p class="muted">Brak danych. Uruchom scraping w zakładce „Scraper”.</p>`;
-        return;
-    }
-    if (state.sub !== "summary" && state.sub !== "matches" && !state.events.size) {
-        out.innerHTML = `<p class="muted">Wybierz co najmniej jedno zdarzenie HT/FT.</p>`;
-        return;
-    }
-    const seq = ++refreshSeq;
-    out.innerHTML = `<p class="muted">Ładowanie…</p>`;
-    try {
-        const html = await ({pairs: viewPairs, summary: viewSummary, teams: viewTeams, matches: viewMatches})[state.sub]();
-        if (seq === refreshSeq) out.innerHTML = html;
-    } catch (e) {
-        if (seq === refreshSeq) out.innerHTML = `<p class="muted">Błąd: ${esc(e.message)}</p>`;
-    }
-}
-
-function matchRows(list, showLeague) {
-    return list.map(m => `<tr>
-        <td>${esc(m.season)}</td>${showLeague ? `<td>${esc(m.league)}</td>` : ""}<td>${esc(m.stage)}</td>
-        <td>${esc(m.round ?? "")}</td><td>${fmtDate(m.kickoff)}</td>
-        <td>${esc(m.home)} – ${esc(m.away)}</td>
-        <td class="num">${esc(m.scoreHT ?? "")}</td><td class="num">${esc(m.scoreFT ?? "")}</td>
-        <td class="${state.events.has(m.htft) ? "event" : ""}">${esc(m.htft ?? "")}</td></tr>`).join("");
-}
-
-async function viewPairs() {
-    const pairs = await api("/api/v2/analytics/pairs?" + query({minCount: $("fMin").value || 1}));
-    if (!pairs.length) return `<p class="muted">Żadna para nie miała tego zdarzenia ${$("fMin").value}+ razy.</p>`;
-    window.__pairs = pairs;
-    return `<p class="muted small">${pairs.length} par · kliknij wiersz, aby zobaczyć mecze · „spotkań” = wszystkie mecze tej pary w wybranym zakresie</p>
-    <table><thead><tr><th>Para</th><th class="num">Ile razy</th><th class="num">Spotkań</th><th class="num">%</th><th>Ostatnio</th></tr></thead>
-    <tbody>${pairs.map((p, i) => `
-        <tr class="clickable" onclick="togglePair(${i}, this)">
-            <td><b>${esc(p.teamA)}</b> & <b>${esc(p.teamB)}</b></td>
-            <td class="num">${p.count}<span class="bar" style="width:${Math.min(p.count * 8, 80)}px"></span></td>
-            <td class="num">${p.meetings}</td><td class="num">${pct(p.count, p.meetings)}</td>
-            <td>${esc(p.occurrences.at(-1)?.season ?? "")}</td>
-        </tr>`).join("")}</tbody></table>`;
-}
-
-window.togglePair = (i, tr) => {
-    if (tr.nextElementSibling?.classList.contains("detail")) return tr.nextElementSibling.remove();
-    const p = window.__pairs[i];
-    tr.insertAdjacentHTML("afterend", `<tr class="detail"><td colspan="5"><table>${matchRows(p.occurrences, !state.league)}</table></td></tr>`);
-};
-
-async function viewSummary() {
-    const rows = await api("/api/v2/analytics/summary?" + query());
-    if (!rows.length) return `<p class="muted">Brak meczów.</p>`;
-    const total = rows.reduce((a, r) => a + r.matches, 0);
-    const sel = rows.reduce((a, r) => a + r.selected, 0);
-    return `<table><thead><tr><th>Sezon</th><th>Etap</th><th class="num">Mecze</th>
-        <th class="num hl">Wybrane</th><th class="num hl">%</th>
-        ${HTFT.map(e => `<th class="num ${state.events.has(e) ? "hl" : ""}">${e}</th>`).join("")}</tr></thead>
-        <tbody>${rows.map(r => `<tr><td>${esc(r.season)}</td><td>${esc(r.stage ?? "")}</td><td class="num">${r.matches}</td>
-            <td class="num hl"><b>${r.selected}</b></td><td class="num hl">${pct(r.selected, r.matches)}</td>
-            ${HTFT.map(e => `<td class="num ${state.events.has(e) ? "hl" : ""}">${r.htft[e]}</td>`).join("")}</tr>`).join("")}
-        <tr><td><b>Razem</b></td><td></td><td class="num"><b>${total}</b></td><td class="num hl"><b>${sel}</b></td>
-            <td class="num hl"><b>${pct(sel, total)}</b></td><td colspan="9"></td></tr>
-        </tbody></table>`;
-}
-
-async function viewTeams() {
-    const teams = await api("/api/v2/analytics/teams?" + query());
-    if (!teams.length) return `<p class="muted">Brak.</p>`;
-    return `<table><thead><tr><th>Drużyna</th><th class="num">Ile razy</th><th class="num">Mecze</th><th class="num">%</th></tr></thead>
-        <tbody>${teams.map(t => `<tr><td>${esc(t.team)}</td><td class="num">${t.hits}</td><td class="num">${t.matches}</td>
-        <td class="num">${pct(t.hits, t.matches)}</td></tr>`).join("")}</tbody></table>`;
-}
-
-async function viewMatches() {
-    const list = await api("/api/v2/analytics/matches?" + query());
-    const showLeague = !state.league;
-    return `<p class="muted small">${list.length} meczów · wybrane zdarzenia są wyróżnione</p>
-        <table><thead><tr><th>Sezon</th>${showLeague ? "<th>Liga</th>" : ""}<th>Etap</th><th>Runda</th><th>Data</th><th>Mecz</th>
-        <th class="num">HT</th><th class="num">FT</th><th>HT/FT</th></tr></thead>
-        <tbody>${matchRows(list.slice().reverse(), showLeague)}</tbody></table>`;
+    loadDaily();
 }
 
 // ---------------- Mecze dnia ----------------
@@ -466,7 +285,7 @@ function renderDaily() {
                     <td class="num">${v.tracked ? `<span class="pill ${v.pairHits ? "on" : ""}">${v.pairHits}/${v.pairMeetings}</span>` : ""}</td>
                     <td>${v.tracked ? fourCell(v, m.league) : ""}</td>
                     <td><span class="hist">${v.pairHistory.slice(0, 6).map(h =>
-                        `<span class="${state.events.has(h.htft) ? "on" : ""}" title="${esc(h.season)} ${esc(h.home)} – ${esc(h.away)} ${esc(h.scoreHT)} / ${esc(h.scoreFT)}">${esc(h.htft)}</span>`).join("")}</span></td>
+                        `<span class="${state.events.has(h.htft) ? "on" : ""}" title="${fmtDate(h.kickoff)} · ${esc(h.season)} · ${esc(h.home)} – ${esc(h.away)} · do przerwy ${esc(h.scoreHT)}, koniec ${esc(h.scoreFT)}">${esc(h.htft)}<i>’${String(h.kickoff ?? "").slice(2, 4)}</i></span>`).join("")}</span></td>
                     <td class="num">${v.tracked ? teamCell(v.homeStats) : ""}</td>
                     <td class="num">${v.tracked ? teamCell(v.awayStats) : ""}</td>
                 </tr>`;
@@ -477,11 +296,25 @@ function renderDaily() {
 window.toggleDaily = (idx, tr) => {
     if (tr.nextElementSibling?.classList.contains("detail")) return tr.nextElementSibling.remove();
     const v = state.daily[idx];
-    const body = v.pairHistory.length
-        ? `<table>${matchRows(v.pairHistory, true)}</table>`
-        : `<span class="muted">Brak wcześniejszych meczów tej pary w bazie.</span>`;
+    const body = v.pairHistory.length ? pairTable(v.pairHistory) : `<span class="muted">Brak wcześniejszych meczów tej pary w bazie.</span>`;
     tr.insertAdjacentHTML("afterend", `<tr class="detail"><td colspan="9">${body}</td></tr>`);
 };
+
+/** Wszystkie wcześniejsze mecze pary: kiedy, który sezon i kolejka, wynik do przerwy i końcowy. */
+function pairTable(list) {
+    return `<table class="pair-table"><thead><tr><th>Data</th><th>Sezon</th><th>Liga</th><th>Kolejka</th>
+        <th>Mecz</th><th class="num">Do przerwy</th><th class="num">Koniec</th><th>HT/FT</th></tr></thead><tbody>
+        ${list.map(m => {
+            const four = FOUR.includes(m.htft), sel = state.events.has(m.htft);
+            return `<tr class="${four ? "four-row" : ""}">
+                <td>${fmtDate(m.kickoff)}</td><td>${esc(m.season ?? "")}</td>
+                <td>${esc(m.league ?? "")}${m.stage && !/regular/i.test(m.stage) ? ` <span class="muted small">${esc(m.stage)}</span>` : ""}</td>
+                <td>${esc(m.roundNumber ?? m.round ?? "")}</td>
+                <td>${esc(m.home)} – ${esc(m.away)}</td>
+                <td class="num">${esc(m.scoreHT ?? "")}</td><td class="num"><b>${esc(m.scoreFT ?? "")}</b></td>
+                <td class="${sel || four ? "event" : ""}">${esc(m.htft ?? "")}</td></tr>`;
+        }).join("")}</tbody></table>`;
+}
 
 $("dUpdate").onclick = async () => {
     const slugs = [...new Set(state.daily.filter(v => v.tracked).map(v => v.match.countrySlug))]
@@ -784,9 +617,94 @@ $("hRefresh").onclick = async () => {
     }
 };
 
-// ---------------- Lamaki ----------------
+// ---------------- Miesiące ----------------
 
-// ustawienia i wpisane kursy zostają w przeglądarce (to tylko wygoda - bez nich widok działa na danych z API)
+const MONTHS = ["styczeń", "luty", "marzec", "kwiecień", "maj", "czerwiec", "lipiec", "sierpień", "wrzesień",
+    "październik", "listopad", "grudzień"];
+const M_PRESETS = {"Lamaki (1/2 + 2/1)": ["1/2", "2/1"], "1/X + 2/X": ["1/X", "2/X"], "Wszystkie 4": FOUR};
+state.monthEvents = new Set(["1/2", "2/1"]);
+
+$("mMonth").innerHTML = MONTHS.map((m, i) => `<option value="${i + 1}">${m}</option>`).join("");
+$("mMonth").value = new Date().getMonth() + 1;
+$("mFrom").innerHTML = Array.from({length: 12}, (_, i) => new Date().getFullYear() - i)
+    .map(y => `<option ${y === 2021 ? "selected" : ""}>${y}</option>`).join("");
+["mMonth", "mFrom", "mSort", "mLimit"].forEach(id => $(id).onchange = loadMonths);
+let mTimer;
+$("mMin").oninput = $("mSearch").oninput = () => { clearTimeout(mTimer); mTimer = setTimeout(loadMonths, 300); };
+
+function renderMonthEvents() {
+    const pre = $("mPresets"), box = $("mEvents");
+    pre.innerHTML = box.innerHTML = "";
+    Object.entries(M_PRESETS).forEach(([name, ev]) => {
+        const on = ev.length === state.monthEvents.size && ev.every(e => state.monthEvents.has(e));
+        pre.appendChild(chip(name, on, () => { state.monthEvents = new Set(ev); loadMonths(); }, "preset"));
+    });
+    HTFT.forEach(e => box.appendChild(chip(e, state.monthEvents.has(e), () => {
+        const next = new Set(state.monthEvents);
+        next.has(e) ? next.delete(e) : next.add(e);
+        if (next.size) { state.monthEvents = next; loadMonths(); }
+    })));
+}
+
+let monthsSeq = 0;
+
+async function loadMonths() {
+    renderMonthEvents();
+    const seq = ++monthsSeq;
+    $("monthsResult").innerHTML = `<p class="muted">Liczę…</p>`;
+    const p = new URLSearchParams({month: $("mMonth").value, fromYear: $("mFrom").value, minMatches: $("mMin").value || 1,
+        sort: $("mSort").value, limit: $("mLimit").value});
+    state.monthEvents.forEach(e => p.append("events", e));
+    if ($("mSearch").value.trim()) p.set("search", $("mSearch").value.trim());
+    try {
+        const r = await api("/api/v2/months?" + p);
+        if (seq !== monthsSeq) return;
+        state.months = r;
+        renderMonths();
+    } catch (e) {
+        if (seq === monthsSeq) $("monthsResult").innerHTML = `<p class="muted">Błąd: ${esc(e.message)}</p>`;
+    }
+}
+
+function renderMonths() {
+    const r = state.months;
+    const ev = [...state.monthEvents].join(", ");
+    const month = MONTHS[r.month - 1];
+    if (!r.teams.length) {
+        $("monthsResult").innerHTML = `<p class="muted">Brak drużyn z ${esc(ev)} w miesiącu: ${month}.</p>`;
+        return;
+    }
+    $("monthsResult").innerHTML = `
+        <h2>TOP ${r.teams.length} drużyn – ${month} (${esc(ev)})</h2>
+        <p class="muted small">Mecze z miesiąca „${month}” w latach ${r.years[0] ?? ""}–${r.years.at(-1) ?? ""}: ${r.matches} meczów, zdarzenie w ${r.hits}
+            (<b>${pct(r.hits, r.matches)}</b> – średnia, do porównania z drużynami) · w komórce roku: zdarzenia/mecze · kliknij drużynę, aby zobaczyć mecze</p>
+        <table><thead><tr><th>#</th><th>Drużyna</th><th>Liga</th>
+            <th class="num" title="W ilu latach drużyna miała zdarzenie w tym miesiącu / w ilu latach grała w tym miesiącu">Lata</th>
+            <th class="num">Ile razy</th><th class="num">Mecze</th><th class="num">%</th>
+            ${r.years.map(y => `<th class="num">${y}</th>`).join("")}</tr></thead><tbody>
+        ${r.teams.map((t, i) => `<tr class="clickable" onclick="toggleMonthTeam(${i}, this)">
+            <td class="muted">${i + 1}</td><td><b>${esc(t.team)}</b></td>
+            <td class="small">${esc(t.country)}: ${esc(t.league)}</td>
+            <td class="num"><b>${t.yearsWithHit}</b>/${t.yearsPlayed}</td>
+            <td class="num"><b>${t.hits}</b></td><td class="num">${t.matches}</td>
+            <td class="num">${pct(t.hits, t.matches)}</td>
+            ${r.years.map(y => {
+                const c = t.years[y];
+                if (!c) return `<td class="num muted">–</td>`;
+                return `<td class="num ${c.hits ? "year-hit" : "muted"}">${c.hits}/${c.matches}</td>`;
+            }).join("")}</tr>`).join("")}
+        </tbody></table>`;
+}
+
+window.toggleMonthTeam = (i, tr) => {
+    if (tr.nextElementSibling?.classList.contains("detail")) return tr.nextElementSibling.remove();
+    const t = state.months.teams[i];
+    tr.insertAdjacentHTML("afterend", `<tr class="detail"><td colspan="${7 + state.months.years.length}">${pairTable(t.events)}</td></tr>`);
+};
+
+// ---------------- localStorage ----------------
+
+// zapamiętane wybory (np. zaznaczone ligi w Scraperze) - tylko wygoda, bez nich wszystko działa
 const store = {
     get(key, def) {
         try {
@@ -801,254 +719,6 @@ const store = {
         } catch {
         }
     },
-};
-
-const money = (v) => v == null ? "–" : v.toFixed(2) + " zł";
-
-const RANGES = {today: "Dziś", tomorrow: "Jutro", after: "Pojutrze", week: "Najbliższe dni"};
-state.strategyRange = RANGES[new URLSearchParams(location.search).get("range")] ? new URLSearchParams(location.search).get("range") : "today";
-
-function renderRange() {
-    const box = $("sRange");
-    box.innerHTML = "";
-    Object.entries(RANGES).forEach(([k, label]) => box.appendChild(chip(label, state.strategyRange === k, () => {
-        state.strategyRange = k;
-        renderRange();
-        renderStrategy();
-    })));
-}
-
-/** Mecze do zagrania (jeszcze nierozpoczęte) z wybranego zakresu dni. */
-function playable(list) {
-    const offset = {today: 0, tomorrow: 1, after: 2}[state.strategyRange];
-    const d = new Date();
-    d.setDate(d.getDate() + (offset ?? 0));
-    const day = offset == null ? null : isoDay(d);
-    return list.filter(c => (!c.status || c.status === "NS" || c.status === "TBD") && (!day || fmtDate(c.kickoff) === day));
-}
-
-let strategySeq = 0;
-
-async function loadStrategy() {
-    const seq = ++strategySeq;
-    $("strategyUpcoming").innerHTML = `<p class="muted">Szukam meczów i kursów…</p>`;
-    const p = new URLSearchParams();
-    if ($("sMin").value) p.set("minCommon", $("sMin").value);
-    if ($("sFrom").value) p.set("historyFrom", $("sFrom").value);
-    if ($("sAhead").value) p.set("daysAhead", $("sAhead").value);
-    try {
-        const v = await api("/api/v2/strategy?" + p);
-        if (seq !== strategySeq) return;
-        state.strategy = v;
-        if (!$("sFrom").value) $("sFrom").value = v.settings.historyFrom;
-        if (!$("sTarget").value) $("sTarget").value = store.get("strategy.target", v.target);
-        if (!$("sCap").value) $("sCap").value = store.get("strategy.cap", v.cap);
-        renderStrategy();
-        fillGoals(false);
-    } catch (e) {
-        if (seq === strategySeq) $("strategyUpcoming").innerHTML = `<p class="muted">Błąd: ${esc(e.message)}</p>`;
-    }
-}
-
-["sMin", "sFrom", "sAhead"].forEach(id => $(id).onchange = loadStrategy);
-$("sReload").onclick = loadStrategy;
-$("sTarget").onchange = () => { store.set("strategy.target", +$("sTarget").value); renderStrategy(); };
-$("sCap").onchange = () => { store.set("strategy.cap", +$("sCap").value); renderStrategy(); };
-
-const sunkOf = (league) => store.get("strategy.sunk." + league, 0);
-
-/** Kursy meczu: wpisane ręcznie (np. z Superbetu/STS) mają pierwszeństwo przed najlepszymi z API. */
-function oddsOf(c) {
-    const typed = store.get("strategy.odds." + c.externalId, {});
-    return Object.fromEntries(state.strategy.settings.events.map(e => [e, typed[e] ?? c.odds[e]?.odd ?? null]));
-}
-
-/**
- * Stawki jak w arkuszu: łącznie (cel + włożone) / (podatek × kurs łączny − 1), rozdzielone tak,
- * żeby każde z trafień dało tę samą wygraną. Kurs łączny = 1 / Σ(1/kurs).
- */
-function stakes(odds, sunk) {
-    const values = Object.values(odds);
-    if (!values.length || values.some(o => !(o > 1))) return null;
-    const comb = 1 / values.reduce((a, o) => a + 1 / o, 0);
-    const factor = state.strategy.tax * comb - 1;
-    if (factor <= 0) return {comb, total: null, per: {}};
-    const total = (+$("sTarget").value + sunk) / factor;
-    return {comb, total, per: Object.fromEntries(Object.entries(odds).map(([e, o]) => [e, total * comb / o]))};
-}
-
-function stakeCells(c) {
-    const s = stakes(oddsOf(c), sunkOf(c.league));
-    if (!s) return `<td class="num muted">–</td><td class="muted small">wpisz kursy</td>`;
-    if (s.total == null) return `<td class="num">${s.comb.toFixed(2)}</td><td class="warn small">kurs za niski</td>`;
-    const after = sunkOf(c.league) + s.total;
-    const per = Object.entries(s.per).map(([e, v]) => `${esc(e)}: <span class="stake">${money(v)}</span>`).join("<br>");
-    return `<td class="num">${s.comb.toFixed(2)}</td>
-        <td class="stakes">${per}<br><span class="muted small">razem ${money(s.total)}</span>
-        ${after > +$("sCap").value ? `<br><span class="warn small">po tym zakładzie seria przekroczy limit (${money(after)})</span>` : ""}</td>`;
-}
-
-const goalsSum = (score) => score ? score.split("-").reduce((a, x) => a + +x, 0) : null;
-
-/**
- * Podwójny lamak: drużyna, która wygrała mecz, strzeliła pierwszego gola, a do przerwy przegrywała.
- * null = brak kolejności goli (jeszcze nie pobrana albo niezgodna z wynikiem).
- */
-function isDouble(h) {
-    const winner = {"2/1": "H", "1/2": "A"}[h.htft];
-    if (!winner || !h.goalOrder || h.goalOrder === "?") return null;
-    return h.goalOrder[0] === winner;
-}
-
-/** Wspólne zdarzenia pary + podsumowanie: ile z nich miało over 1.5 do przerwy i ile było podwójnych. */
-function patternsCell(hits) {
-    const n = hits.length;
-    const ht15 = hits.filter(h => goalsSum(h.scoreHT) >= 2).length;
-    const known = hits.filter(h => isDouble(h) !== null);
-    const doubles = known.filter(isDouble).length;
-    const ratio = (k, of) => `<b class="${of && k === of ? "ok" : ""}">${k}/${of}</b>`;
-    return `<span class="hist">${hits.map(h => {
-            const tags = (goalsSum(h.scoreHT) >= 2 ? " o1.5" : "") + (isDouble(h) ? " 2×" : "");
-            return `<span class="on" title="${esc(h.season)} ${esc(h.home)} – ${esc(h.away)} · HT ${esc(h.scoreHT)} · FT ${esc(h.scoreFT)}${h.goalOrder && h.goalOrder !== "?" ? " · gole: " + esc(h.goalOrder) : ""}">${esc(h.htft)} ${fmtDate(h.kickoff).slice(2, 7)}${tags}</span>`;
-        }).join("")}</span>
-        <div class="small muted">HT over 1.5: ${ratio(ht15, n)} · podwójny: ${ratio(doubles, known.length)}${known.length < n ? ` <span title="brak kolejności goli">(+${n - known.length} bez danych)</span>` : ""}</div>`;
-}
-
-function renderStrategy() {
-    const v = state.strategy;
-    if (!v) return;
-    const ev = v.settings.events;
-
-    // ---- mecze do zagrania, z podziałem na ligi ----
-    const up = playable(v.upcoming);
-    const groups = new Map();
-    up.forEach(c => groups.has(c.league) ? groups.get(c.league).push(c) : groups.set(c.league, [c]));
-    const cols = 6 + ev.length;
-    const when = {today: "dziś", tomorrow: "jutro", after: "pojutrze", week: `w najbliższych ${v.settings.daysAhead} dniach`}[state.strategyRange];
-    const showDate = state.strategyRange === "week";
-
-    $("strategyUpcoming").innerHTML = `
-        <h2>Mecze do zagrania ${esc(when)}${up.length ? ` · ${up.length} w ${groups.size} ${groups.size === 1 ? "lidze" : "ligach"}` : ""}</h2>
-        <p class="muted small">Nierozpoczęte mecze par, które od ${esc(v.settings.historyFrom)} miały co najmniej ${v.settings.minCommon}× ${esc(ev.join(" / "))}
-            · kursy podpowiedziane z API (najwyższe u bukmacherów z API) - wpisz swoje ze Superbetu/STS, zostaną zapamiętane
-            · stawki liczone dla celu ${money(+$("sTarget").value)} i kwoty już włożonej w serię danej ligi</p>
-        ${v.warning ? `<p class="warn small">${esc(v.warning)}</p>` : ""}
-        ${up.length ? `<table><thead><tr>
-            <th>${showDate ? "Data" : "Godz."}</th><th>Mecz</th><th class="num" title="Wspólne zdarzenia pary / wszystkie mecze pary od daty">Wspólne</th>
-            <th>Wspólne zdarzenia</th>${ev.map(e => `<th class="num">${esc(e)}</th>`).join("")}
-            <th class="num">Kurs łączny</th><th>Stawki</th></tr></thead><tbody>
-            ${[...groups.entries()].map(([league, rows]) => {
-                const l = v.leagues.find(x => x.name === league);
-                return `<tr class="league-head"><td colspan="${cols}">${esc(league)}
-                    <span class="muted small">· seria: ${l ? l.sinceLastHit : "?"} meczów bez trafienia · włożone w serię: ${money(sunkOf(league))}</span></td></tr>
-                ${rows.map(c => `<tr data-i="${up.indexOf(c)}">
-                    <td>${showDate ? fmtDate(c.kickoff) + " " : ""}${fmtTime(c.kickoff)}</td>
-                    <td><b>${esc(c.home)}</b> – <b>${esc(c.away)}</b></td>
-                    <td class="num"><span class="pill on">${c.common}/${c.meetings}</span></td>
-                    <td>${patternsCell(c.pairHits)}</td>
-                    ${ev.map(e => `<td class="num"><input class="odd" type="number" step="0.5" min="1" data-e="${esc(e)}"
-                        value="${oddsOf(c)[e] ?? ""}" title="${c.odds[e] ? `API: ${c.odds[e].odd} (${esc(c.odds[e].bookmaker)})` : "brak kursu w API"}"></td>`).join("")}
-                    ${stakeCells(c)}
-                </tr>`).join("")}`;
-            }).join("")}
-            </tbody></table>` : `<p class="muted">Brak meczów do zagrania ${esc(when)}.${state.strategyRange !== "week" ? " Sprawdź „Najbliższe dni”." : ""}</p>`}`;
-
-    $("strategyUpcoming").querySelectorAll("input.odd").forEach(input => input.oninput = () => {
-        const tr = input.closest("tr");
-        const c = up[+tr.dataset.i];
-        const typed = store.get("strategy.odds." + c.externalId, {});
-        input.value ? typed[input.dataset.e] = +input.value : delete typed[input.dataset.e];
-        store.set("strategy.odds." + c.externalId, typed);
-        const cells = tr.querySelectorAll("td");
-        cells[cells.length - 1].remove();
-        cells[cells.length - 2].remove();
-        tr.insertAdjacentHTML("beforeend", stakeCells(c));
-    });
-
-    // ---- ligi ----
-    $("strategyLeagues").innerHTML = `
-        <h2>Ligi</h2>
-        <p class="muted small">„Kwalifikujące się” = mecze par, które miały już wcześniej co najmniej ${v.settings.minCommon} wspólne zdarzenia
-            · „Seria” = ile takich meczów minęło od ostatniego trafienia · „Włożone w serię” wpisujesz sam (0 po trafieniu)</p>
-        <table><thead><tr><th>Liga</th><th class="num">Mecze od ${esc(v.settings.historyFrom.slice(0, 4))}</th><th class="num">Zdarzenie w lidze</th>
-            <th class="num">Kwalifikujące się</th><th class="num">Trafione</th><th class="num">Seria</th><th>Ostatnie trafienie</th>
-            <th class="num">Włożone w serię</th></tr></thead><tbody>
-            ${v.leagues.map(l => `<tr>
-                <td>${esc(l.name)}</td><td class="num">${l.matches}</td>
-                <td class="num">${pct(l.eventHits, l.matches)}</td>
-                <td class="num">${l.qualifying}</td>
-                <td class="num">${l.qualifyingHits} <span class="muted small">(${pct(l.qualifyingHits, l.qualifying)})</span></td>
-                <td class="num"><b>${l.sinceLastHit}</b></td>
-                <td>${l.lastHit ? `${fmtDate(l.lastHit.kickoff)} ${esc(l.lastHit.home)} – ${esc(l.lastHit.away)} <span class="event">${esc(l.lastHit.htft)}</span>` : `<span class="muted">–</span>`}</td>
-                <td class="num"><input class="sunk" type="number" min="0" step="1" data-league="${esc(l.name)}" value="${sunkOf(l.name) || ""}" placeholder="0"></td>
-            </tr>`).join("")}
-        </tbody></table>`;
-
-    $("strategyLeagues").querySelectorAll("input.sunk").forEach(input => input.onchange = () => {
-        store.set("strategy.sunk." + input.dataset.league, +input.value || 0);
-        renderStrategy();
-    });
-
-    // ---- rozstrzygnięte ----
-    const rec = v.recent;
-    $("strategyRecent").innerHTML = `
-        <h2>Rozstrzygnięte w ostatnich ${v.settings.daysBack} dniach</h2>
-        ${rec.length ? `<table><thead><tr><th>Data</th><th>Liga</th><th>Mecz</th><th class="num">Wspólne przed</th>
-            <th class="num">HT</th><th class="num">FT</th><th>HT/FT</th><th></th></tr></thead><tbody>
-            ${rec.map(r => `<tr>
-                <td>${fmtDate(r.match.kickoff)}</td><td>${esc(r.league)}</td>
-                <td>${esc(r.match.home)} – ${esc(r.match.away)}</td><td class="num">${r.commonBefore}</td>
-                <td class="num">${esc(r.match.scoreHT ?? "")}</td><td class="num">${esc(r.match.scoreFT ?? "")}</td>
-                <td class="${r.hit ? "event" : ""}">${esc(r.match.htft)}</td>
-                <td>${r.hit ? `<span class="ok">trafiony</span>` : `<span class="muted">nie</span>`}</td>
-            </tr>`).join("")}
-            </tbody></table>` : `<p class="muted">Brak rozstrzygniętych meczów spełniających warunek. Jeśli wczoraj grały Twoje ligi, kliknij „Pobierz nowe wyniki”.</p>`}`;
-}
-
-let strategyPoll;
-let strategyJobRunning = false;
-let goalsTried = false;
-
-/** Dociąga kolejność goli w lamakach (podwójne lamaki); force = także gdy na liście niczego nie brakuje. */
-async function fillGoals(force) {
-    const v = state.strategy;
-    const missing = v && v.upcoming.some(c => c.pairHits.some(h => h.goalOrder == null));
-    if (!force && (goalsTried || !missing)) return;
-    goalsTried = true;
-    const info = $("sJob").textContent;
-    $("sJob").textContent = "Uzupełniam kolejność goli w lamakach (podwójne lamaki)…";
-    try {
-        const r = await api("/api/v2/strategy/goals?historyFrom=" + ($("sFrom").value || ""), {method: "POST"});
-        $("sJob").textContent = info + (r.filled ? ` · kolejność goli: +${r.filled}` : "");
-    } catch (e) {
-        $("sJob").textContent = "Nie udało się pobrać kolejności goli: " + e.message;
-    }
-    loadStrategy();
-}
-
-async function pollStrategyJob() {
-    clearTimeout(strategyPoll);
-    const s = await api("/api/v2/scrape/status");
-    $("sUpdate").disabled = s.running;
-    if (s.running) {
-        $("sJob").textContent = `Pobieram wyniki… sezony ${s.seasonsDone}/${s.seasonsTotal} · nowe mecze: ${s.matchesSaved}`;
-        strategyPoll = setTimeout(pollStrategyJob, 2000);
-    } else if (s.finishedAt) {
-        $("sJob").textContent = `Ostatnie pobieranie: ${fmtDate(s.finishedAt)} ${fmtTime(s.finishedAt)} · nowe mecze: ${s.matchesSaved}`
-            + (s.errors ? ` · błędy: ${s.errors} (szczegóły w zakładce Scraper)` : "");
-        if (strategyJobRunning) fillGoals(true);
-    }
-    strategyJobRunning = s.running;
-}
-
-$("sUpdate").onclick = async () => {
-    try {
-        await api("/api/v2/strategy/update", {method: "POST"});
-    } catch (e) {
-        return alert(e.message);
-    }
-    strategyJobRunning = true;
-    pollStrategyJob();
 };
 
 // ---------------- Scraper ----------------
@@ -1187,8 +857,7 @@ $("raBtn").onclick = async () => {
 function reloadCurrentView() {
     if (state.view === "daily") loadDaily();
     if (state.view === "history") loadHistory();
-    if (state.view === "strategy") loadStrategy();
-    if (state.view === "analysis") refresh();
+    if (state.view === "months") loadMonths();
 }
 
 async function pollStatus() {
@@ -1216,7 +885,6 @@ async function pollStatus() {
 // ---------------- start ----------------
 
 renderEvents();
-renderRange();
 loadScraperConfig();
 showView(new URLSearchParams(location.search).get("view") || "daily");
 pollStatus();

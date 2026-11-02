@@ -55,4 +55,12 @@ public interface MatchRepository extends JpaRepository<MatchEntity, Long> {
             GROUP BY m.country, m.league, m.startSeasonYear, m.seasonLabel, m.HTFT
             """)
     List<Object[]> countHtftBySeason(@Param("fromSeason") int fromSeason);
+
+    /** Zakończone mecze z danego miesiąca (1-12) wszystkich lat od podanej daty. */
+    @Query("""
+            SELECT m FROM MatchEntity m
+            WHERE m.league IS NOT NULL AND m.HTFT IS NOT NULL AND m.kickoff >= :from
+              AND EXTRACT(MONTH FROM m.kickoff) = :month
+            """)
+    List<MatchEntity> findFinishedInMonth(@Param("month") int month, @Param("from") java.time.LocalDateTime from);
 }

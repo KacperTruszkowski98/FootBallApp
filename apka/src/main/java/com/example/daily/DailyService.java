@@ -2,8 +2,7 @@ package com.example.daily;
 
 import com.example.MatchEntity;
 import com.example.MatchRepository;
-import com.example.analytics.AnalyticsService;
-import com.example.analytics.AnalyticsService.MatchView;
+import com.example.dto.MatchView;
 import com.example.history.HistoryService;
 import com.example.source.DailySource;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DailyService {
 
-    private static final int HISTORY_LIMIT = 10;
+    private static final int HISTORY_LIMIT = 50;
 
     private final DailySource source;
     private final MatchRepository repository;
@@ -80,7 +79,7 @@ public class DailyService {
             }
 
             result.add(new DailyMatchView(m, true, pair.size(), pairHits,
-                    pair.stream().limit(HISTORY_LIMIT).map(AnalyticsService.MatchView::of).toList(),
+                    pair.stream().limit(HISTORY_LIMIT).map(MatchView::of).toList(),
                     teamStats(history, m.home(), m.league(), wanted),
                     teamStats(history, m.away(), m.league(), wanted),
                     pairCounts, sinceLast, lastEvent == null ? null : MatchView.of(lastEvent),

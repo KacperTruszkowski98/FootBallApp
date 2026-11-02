@@ -12,8 +12,7 @@
     <nav class="tabs" id="mainTabs">
         <button data-view="daily" class="active">Mecze dnia</button>
         <button data-view="history">Historia</button>
-        <button data-view="strategy">Lamaki</button>
-        <button data-view="analysis">Analiza</button>
+        <button data-view="months">Miesiące</button>
         <button data-view="scraper">Scraper</button>
     </nav>
     <div class="refresh-all">
@@ -114,87 +113,46 @@
         <div class="panel" id="historySeasons"></div>
     </section>
 
-    <!-- ================= LAMAKI ================= -->
-    <section id="view-strategy" class="view">
+    <!-- ================= MIESIĄCE ================= -->
+    <section id="view-months" class="view">
         <div class="panel daily-filters">
-            <div class="field">
-                <span class="label">Pokaż mecze</span>
-                <div class="chips" id="sRange"></div>
-            </div>
             <label class="field">
-                <span class="label">Min. wspólnych zdarzeń pary</span>
-                <input type="number" id="sMin" min="1" max="5" value="2">
-            </label>
-            <label class="field">
-                <span class="label">Licz wspólne od</span>
-                <input type="date" id="sFrom">
-            </label>
-            <label class="field">
-                <span class="label">Dni do przodu</span>
-                <input type="number" id="sAhead" min="1" max="14" value="7">
-            </label>
-            <label class="field">
-                <span class="label">Cel serii (zł)</span>
-                <input type="number" id="sTarget" min="1" step="10">
-            </label>
-            <label class="field">
-                <span class="label">Limit serii (zł)</span>
-                <input type="number" id="sCap" min="1" step="100">
+                <span class="label">Miesiąc</span>
+                <select id="mMonth"></select>
             </label>
             <div class="field">
-                <span class="label">Wyniki w bazie</span>
-                <div class="row nowrap">
-                    <button id="sUpdate" title="Dociąga bieżące sezony krajów z ligami strategii">⟳ Pobierz nowe wyniki</button>
-                    <button class="ghost" id="sReload">Odśwież listę</button>
-                </div>
+                <span class="label">Co liczymy</span>
+                <div class="chips" id="mPresets"></div>
+                <div class="chips" id="mEvents"></div>
             </div>
-            <p id="sJob" class="muted small job-line"></p>
+            <label class="field">
+                <span class="label">Od roku</span>
+                <select id="mFrom"></select>
+            </label>
+            <label class="field">
+                <span class="label" title="Ile meczów w tym miesiącu (we wszystkich latach) drużyna musi mieć, żeby była w rankingu">Min. meczów</span>
+                <input type="number" id="mMin" min="1" value="4">
+            </label>
+            <label class="field">
+                <span class="label">Szukaj ligi / kraju</span>
+                <input type="search" id="mSearch" placeholder="np. anglia, turcja…">
+            </label>
+            <label class="field">
+                <span class="label">Sortuj</span>
+                <select id="mSort">
+                    <option value="YEARS">w ilu latach</option>
+                    <option value="HITS">ile razy</option>
+                    <option value="PERCENT">% meczów</option>
+                </select>
+            </label>
+            <label class="field">
+                <span class="label">Ile drużyn</span>
+                <select id="mLimit">
+                    <option>10</option><option selected>20</option><option>50</option><option>100</option>
+                </select>
+            </label>
         </div>
-        <div class="panel" id="strategyUpcoming"></div>
-        <div class="panel" id="strategyLeagues"></div>
-        <div class="panel" id="strategyRecent"></div>
-    </section>
-
-    <!-- ================= ANALIZA ================= -->
-    <section id="view-analysis" class="view">
-        <div class="layout">
-            <aside class="panel sidebar">
-                <input type="search" id="leagueSearch" placeholder="Szukaj kraju / ligi…">
-                <div id="leagueNav"></div>
-            </aside>
-
-            <div class="content">
-                <div class="panel">
-                    <div class="row between">
-                        <h2 id="aTitle">Wybierz ligę z listy</h2>
-                        <div class="row">
-                            <label class="inline">Od sezonu <select id="fFrom"></select></label>
-                            <label class="inline">Min. razy (pary) <input id="fMin" type="number" min="1" value="2"></label>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <span class="label">Etapy</span>
-                        <div id="fStages" class="chips"></div>
-                    </div>
-                    <div class="field">
-                        <span class="label">Zdarzenie HT/FT</span>
-                        <div class="chips events-presets"></div>
-                        <div class="chips events-chips"></div>
-                    </div>
-                </div>
-
-                <nav class="tabs sub" id="subTabs">
-                    <button data-sub="pairs" class="active">Wspólne mecze</button>
-                    <button data-sub="summary">Sezony</button>
-                    <button data-sub="teams">Drużyny</button>
-                    <button data-sub="matches">Mecze</button>
-                </nav>
-
-                <div class="panel" id="result">
-                    <p class="muted">Brak danych. Uruchom scraping w zakładce „Scraper”.</p>
-                </div>
-            </div>
-        </div>
+        <div class="panel" id="monthsResult"></div>
     </section>
 
     <!-- ================= SCRAPER ================= -->
