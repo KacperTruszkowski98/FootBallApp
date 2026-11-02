@@ -372,15 +372,28 @@ const kolejekWord = (n) => n === 1 ? "kolejka" : (n % 10 >= 2 && n % 10 <= 4 && 
 function droughtLine(v) {
     const d = v.drought;
     if (!d) return `<span class="muted small">· brak meczów ligi w bazie</span>`;
-    const ev = $("dDryEvents").selectedOptions[0].textContent;
-    const last = d.lastEvent
-        ? `ostatnio <b>${esc(d.lastEvent.htft)}</b> ${esc(d.lastEvent.home)} – ${esc(d.lastEvent.away)} ${fmtDate(d.lastEvent.kickoff)}`
-        : "w bazie nigdy";
+    const part = (x, label) => {
+        if (!x) return "";
+        const last = x.lastEvent
+            ? `ostatnio <b>${esc(x.lastEvent.htft)}</b> ${esc(x.lastEvent.home)} – ${esc(x.lastEvent.away)} ${fmtDate(x.lastEvent.kickoff)}`
+            : "w bazie nigdy";
+        return `<span class="drought ${x.rounds >= 5 ? "long" : ""}" title="${last.replace(/<[^>]+>/g, "")}">${label}: ${x.rounds} ${kolejekWord(x.rounds)} / ${x.matches} ${meczeWord(x.matches)}</span>
+            <span class="muted small">${last}</span>`;
+    };
+    const ds = v.droughts || {};
     const stale = d.lastInDb && (new Date($("dDate").value) - new Date(d.lastInDb)) / 864e5 > 10
         ? ` <span class="warn small" title="Dociągnij wyniki, inaczej susza jest liczona na starych danych">⚠ baza ligi do ${fmtDate(d.lastInDb)}</span>` : "";
-    return `<span class="drought ${d.rounds >= 5 ? "long" : ""}">${d.rounds} ${kolejekWord(d.rounds)} / ${d.matches} ${meczeWord(d.matches)} bez ${esc(ev)}</span>
-        <span class="muted small">· ${last}</span>${stale}`;
+    const q = `${v.match.country}: ${v.match.league}`;
+    return `<a class="small hist-link" href="#" onclick="openLeagueHistory(event, '${esc(q).replace(/'/g, "\\'")}')" title="Otwórz tę ligę w zakładce Historia (dni, sezony, porównanie)">📊 historia ligi</a>
+        <div class="droughts">${part(ds.lamaki, "1/2+2/1")} ${part(ds.draws, "1/X+2/X")}${stale}</div>`;
 }
+
+window.openLeagueHistory = (e, q) => {
+    e.preventDefault();
+    e.stopPropagation();
+    $("hSearch").value = q;
+    showView("history");
+};
 
 function renderDaily() {
     let list = state.daily;

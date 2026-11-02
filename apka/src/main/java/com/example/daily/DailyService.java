@@ -51,7 +51,7 @@ public class DailyService {
             if (onlyTracked && !isTracked) continue;
 
             if (!isTracked) {
-                result.add(new DailyMatchView(m, false, 0, 0, List.of(), null, null, Map.of(), null, null, null));
+                result.add(new DailyMatchView(m, false, 0, 0, List.of(), null, null, Map.of(), null, null, null, Map.of()));
                 continue;
             }
 
@@ -84,7 +84,8 @@ public class DailyService {
                     teamStats(history, m.home(), m.league(), wanted),
                     teamStats(history, m.away(), m.league(), wanted),
                     pairCounts, sinceLast, lastEvent == null ? null : MatchView.of(lastEvent),
-                    drought(history, m, dry)));
+                    drought(history, m, dry),
+                    droughts(history, m)));
         }
 
         result.sort(Comparator
@@ -127,6 +128,18 @@ public class DailyService {
                 MatchView.of(league.get(0)).kickoff());
     }
 
+    private static final Set<String> LAMAKI = Set.of("1/2", "2/1");
+    private static final Set<String> DRAWS = Set.of("1/X", "2/X");
+
+    /** Susza osobno dla lamaków (1/2+2/1) i dla 1/X+2/X - do pokazania obok siebie przy lidze. */
+    static Map<String, LeagueDrought> droughts(List<MatchEntity> history, DailyMatch m) {
+        Map<String, LeagueDrought> result = new LinkedHashMap<>();
+        LeagueDrought l = drought(history, m, LAMAKI), d = drought(history, m, DRAWS);
+        if (l != null) result.put("lamaki", l);
+        if (d != null) result.put("draws", d);
+        return result;
+    }
+
     private static String roundKey(MatchEntity h) {
         String round = h.getRoundName() != null ? h.getRoundName()
                 : h.getCurrentRound() != null ? String.valueOf(h.getCurrentRound()) : h.getKickoff().toLocalDate().toString();
@@ -162,6 +175,6 @@ public class DailyService {
     public record DailyMatchView(DailyMatch match, boolean tracked, int pairMeetings, int pairHits,
                                  List<MatchView> pairHistory, TeamStats homeStats, TeamStats awayStats,
                                  Map<String, Integer> pairCounts, Integer sinceLast, MatchView lastEvent,
-                                 LeagueDrought drought) {
+                                 LeagueDrought drought, Map<String, LeagueDrought> droughts) {
     }
 }
