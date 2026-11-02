@@ -11,10 +11,15 @@
     <h1>⚽ FootballApp</h1>
     <nav class="tabs" id="mainTabs">
         <button data-view="daily" class="active">Mecze dnia</button>
+        <button data-view="history">Historia</button>
         <button data-view="strategy">Lamaki</button>
         <button data-view="analysis">Analiza</button>
         <button data-view="scraper">Scraper</button>
     </nav>
+    <div class="refresh-all">
+        <span id="raInfo" class="muted small"></span>
+        <button class="ghost" id="raBtn" title="Dociąga bieżące sezony wszystkich lig z konfiguracji (ok. 2 zapytania do API na ligę), potem odświeża widok">⟳ Odśwież wszystkie wyniki</button>
+    </div>
 </header>
 
 <main>
@@ -30,11 +35,28 @@
                     <button class="ghost" id="dToday">Dziś</button>
                 </div>
             </div>
-            <label class="check">
-                <input type="checkbox" id="dTracked" checked> tylko moje ligi
+            <label class="field">
+                <span class="label">Szukaj ligi / kraju</span>
+                <input type="search" id="dSearch" placeholder="np. turcja, serie a, niemcy…">
             </label>
             <label class="check">
                 <input type="checkbox" id="dHitsOnly"> tylko pary z historią zdarzenia
+            </label>
+            <label class="field">
+                <span class="label">Susza liczona dla</span>
+                <select id="dDryEvents">
+                    <option value="1/2,2/1,1/X,2/X">1/2 · 2/1 · 1/X · 2/X</option>
+                    <option value="1/2,2/1">1/2 + 2/1 (lamaki)</option>
+                    <option value="1/X,2/X">1/X + 2/X</option>
+                </select>
+            </label>
+            <label class="field">
+                <span class="label" title="Ile kolejek z rzędu w lidze (przed meczem) nie było wybranych zdarzeń">Min. kolejek ligi bez</span>
+                <input type="number" id="dMinRounds" min="0" value="0">
+            </label>
+            <label class="field">
+                <span class="label" title="Ile ostatnich spotkań tej pary nie miało wybranych zdarzeń (pierwszy mecz pary też przechodzi)">Min. spotkań pary bez</span>
+                <input type="number" id="dMinPair" min="0" value="0">
             </label>
             <div class="field">
                 <span class="label">Dociągnij wyniki</span>
@@ -47,6 +69,49 @@
             </div>
         </div>
         <div class="panel" id="dailyResult"></div>
+    </section>
+
+    <!-- ================= HISTORIA ================= -->
+    <section id="view-history" class="view">
+        <div class="panel daily-filters">
+            <div class="field">
+                <span class="label">Zakres</span>
+                <div class="chips" id="hRange"></div>
+            </div>
+            <label class="field">
+                <span class="label">Od</span>
+                <input type="date" id="hFrom">
+            </label>
+            <label class="field">
+                <span class="label">Do</span>
+                <input type="date" id="hTo">
+            </label>
+            <label class="field">
+                <span class="label">Szukaj ligi</span>
+                <input type="search" id="hSearch" placeholder="np. turcja, serie a, niemcy…" list="hLeagueList">
+                <datalist id="hLeagueList"></datalist>
+            </label>
+            <label class="check">
+                <input type="checkbox" id="hCompare"> porównaj z
+            </label>
+            <label class="field" id="hCmpFromBox" hidden>
+                <span class="label">B: od</span>
+                <input type="date" id="hFrom2">
+            </label>
+            <label class="field" id="hCmpToBox" hidden>
+                <span class="label">B: do</span>
+                <input type="date" id="hTo2">
+            </label>
+            <div class="field">
+                <span class="label">Wyniki w bazie</span>
+                <button class="ghost" id="hRefresh" title="Pobiera mecze każdego dnia z zakresu (1 zapytanie do API na dzień); zakończone mecze lig z konfiguracji zapisują się w tle">⟳ Dociągnij brakujące</button>
+            </div>
+            <p id="hInfo" class="muted small job-line"></p>
+        </div>
+        <div class="panel" id="historyCompare" hidden></div>
+        <div class="panel" id="historyDays"></div>
+        <div class="panel" id="historyLeagues"></div>
+        <div class="panel" id="historySeasons"></div>
     </section>
 
     <!-- ================= LAMAKI ================= -->

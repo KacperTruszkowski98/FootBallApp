@@ -60,6 +60,11 @@ public class FinishedMatchesRecorder {
         });
     }
 
+    /** Ile sezonów lig czeka jeszcze na zapis do bazy. */
+    public int pending() {
+        return queued.size();
+    }
+
     @PreDestroy
     void shutdown() {
         executor.shutdownNow();

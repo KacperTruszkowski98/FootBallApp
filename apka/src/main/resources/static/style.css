@@ -228,3 +228,22 @@ input.sunk { width: 90px; }
     .sidebar { position: static; max-height: 260px; }
 }
 .stakes { white-space: normal; min-width: 150px; }
+.four { display: inline-flex; gap: 3px; }
+.four span { min-width: 18px; text-align: center; font-size: 12px; padding: 1px 4px; border-radius: 4px; background: var(--bg); color: var(--muted); }
+.four span.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.h-days td.num b { color: var(--accent); }
+.h-days tr.zero td { color: var(--muted); }
+.drought { font-weight: 400; font-size: 12px; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--panel, rgba(255,255,255,.06)); }
+.drought.long { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.warn { color: #e0a030; font-weight: 400; }
+.refresh-all { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.dry-section td { padding: 14px 10px 8px; font-size: 15px; font-weight: 700; border-top: 2px solid var(--muted); }
+.dry-section.long td { color: var(--accent); border-top-color: var(--accent); }
+.dry-section.none td { color: var(--muted); }
+.compare td.sep, .compare th.sep { width: 12px; padding: 0; border-left: 2px solid var(--muted); }
+.compare tr.total td { font-weight: 700; background: var(--bg); }
+.up { color: var(--accent); }
+.down { color: #e06c6c; }
+.seasons td.cur { box-shadow: inset 0 0 0 1px var(--accent); }
+.cur-tag { font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+[hidden] { display: none !important; }

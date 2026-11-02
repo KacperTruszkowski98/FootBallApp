@@ -24,6 +24,27 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": 
 const pct = (a, b) => b ? (100 * a / b).toFixed(1) + "%" : "–";
 const fmtDate = (d) => d ? d.slice(0, 10) : "";
 const fmtTime = (d) => d ? d.slice(11, 16) : "";
+// wyszukiwanie lig/krajów: bez wielkości liter i znaków diakrytycznych, kraje też po polsku
+const norm = (s) => String(s ?? "").toLowerCase().replace(/ł/g, "l").replace(/ı/g, "i")
+    .normalize("NFD").replace(/\p{M}/gu, "").replace(/-/g, " ");
+const PL_COUNTRY = (() => {
+    const m = {};
+    try {
+        const en = new Intl.DisplayNames(["en"], {type: "region"}), pl = new Intl.DisplayNames(["pl"], {type: "region"});
+        const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for (const a of A) for (const b of A) {
+            const code = a + b, name = en.of(code);
+            if (name && name !== code) m[norm(name)] = pl.of(code);
+        }
+    } catch {
+    }
+    Object.assign(m, {england: "Anglia", scotland: "Szkocja", wales: "Walia", "northern ireland": "Irlandia Północna",
+        turkey: "Turcja", usa: "USA Stany Zjednoczone", "czech republic": "Czechy", "south korea": "Korea Południowa",
+        "ivory coast": "Wybrzeże Kości Słoniowej", "faroe islands": "Wyspy Owcze", world: "Świat"});
+    return m;
+})();
+const matchesSearch = (q, country, league) =>
+    norm(`${country}: ${league} ${PL_COUNTRY[norm(country)] ?? ""}`).includes(norm(q));
 const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 async function api(path, opts) {
@@ -49,6 +70,7 @@ function showView(view) {
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + view));
     if (view === "analysis") loadCompetitions();
     if (view === "daily") loadDaily();
+    if (view === "history") loadHistory();
     if (view === "strategy") {
         loadStrategy();
         pollStrategyJob();
@@ -264,8 +286,10 @@ async function viewMatches() {
 
 $("dDate").value = new URLSearchParams(location.search).get("date") || isoDay(new Date());
 $("dDate").onchange = loadDaily;
-$("dTracked").onchange = loadDaily;
+$("dSearch").oninput = renderDaily;
 $("dHitsOnly").onchange = renderDaily;
+$("dMinRounds").oninput = $("dMinPair").oninput = renderDaily;
+$("dDryEvents").onchange = loadDaily;
 $("dToday").onclick = () => { $("dDate").value = new URLSearchParams(location.search).get("date") || isoDay(new Date()); loadDaily(); };
 $("dPrev").onclick = () => shiftDay(-1);
 $("dNext").onclick = () => shiftDay(1);
@@ -282,8 +306,9 @@ let dailySeq = 0;
 async function loadDaily() {
     const seq = ++dailySeq;
     $("dailyResult").innerHTML = `<p class="muted">Pobieram mecze dnia…</p>`;
-    const p = new URLSearchParams({date: $("dDate").value, onlyTracked: $("dTracked").checked});
+    const p = new URLSearchParams({date: $("dDate").value, onlyTracked: false});
     state.events.forEach(e => p.append("events", e));
+    $("dDryEvents").value.split(",").forEach(e => p.append("droughtEvents", e));
     try {
         const list = await api("/api/v2/daily?" + p);
         if (seq !== dailySeq) return;
@@ -321,12 +346,54 @@ function teamCell(stats) {
     return `<span title="${stats.hits} z ${stats.matches} meczów w lidze">${stats.hits}/${stats.matches} <span class="muted small">(${pct(stats.hits, stats.matches)})</span></span>`;
 }
 
+const FOUR = ["1/2", "2/1", "1/X", "2/X"];
+const meczeWord = (n) => n === 1 ? "mecz" : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? "mecze" : "meczów";
+
+/** Rozbicie historii pary na 1/2, 2/1, 1/X, 2/X + kiedy ostatnio (ile spotkań temu, w jakiej lidze). */
+function fourCell(v, league) {
+    if (!v.pairMeetings) return `<span class="muted small">pierwszy mecz pary</span>`;
+    const c = v.pairCounts || {};
+    const sum = FOUR.reduce((a, e) => a + (c[e] || 0), 0);
+    const nums = FOUR.map(e => `<span class="${c[e] ? "on" : ""}" title="${e}: ${c[e] || 0} z ${v.pairMeetings}">${c[e] || 0}</span>`).join("");
+    let last = `<span class="muted small">nigdy</span>`;
+    if (v.lastEvent) {
+        const l = v.lastEvent;
+        const ago = v.sinceLast === 0 ? "ostatni mecz" : `${v.sinceLast} ${meczeWord(v.sinceLast)} temu`;
+        const otherLeague = l.league && l.league !== league ? ` · ${esc(l.league)}` : "";
+        last = `<span class="small" title="${esc(l.home)} – ${esc(l.away)} ${esc(l.scoreHT)} / ${esc(l.scoreFT)}, ${esc(l.league)} ${esc(l.season)}">
+            ostatnio <b>${esc(l.htft)}</b> ${fmtDate(l.kickoff)} (${ago}${otherLeague})</span>`;
+    }
+    return `<span class="four">${nums}</span> <b>${sum}/${v.pairMeetings}</b><br>${last}`;
+}
+
+const kolejekWord = (n) => n === 1 ? "kolejka" : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? "kolejki" : "kolejek";
+
+/** Susza ligi przed pierwszym meczem dnia: ile kolejek / meczów bez wybranych zdarzeń i kiedy było ostatnie. */
+function droughtLine(v) {
+    const d = v.drought;
+    if (!d) return `<span class="muted small">· brak meczów ligi w bazie</span>`;
+    const ev = $("dDryEvents").selectedOptions[0].textContent;
+    const last = d.lastEvent
+        ? `ostatnio <b>${esc(d.lastEvent.htft)}</b> ${esc(d.lastEvent.home)} – ${esc(d.lastEvent.away)} ${fmtDate(d.lastEvent.kickoff)}`
+        : "w bazie nigdy";
+    const stale = d.lastInDb && (new Date($("dDate").value) - new Date(d.lastInDb)) / 864e5 > 10
+        ? ` <span class="warn small" title="Dociągnij wyniki, inaczej susza jest liczona na starych danych">⚠ baza ligi do ${fmtDate(d.lastInDb)}</span>` : "";
+    return `<span class="drought ${d.rounds >= 5 ? "long" : ""}">${d.rounds} ${kolejekWord(d.rounds)} / ${d.matches} ${meczeWord(d.matches)} bez ${esc(ev)}</span>
+        <span class="muted small">· ${last}</span>${stale}`;
+}
+
 function renderDaily() {
     let list = state.daily;
     if ($("dHitsOnly").checked) list = list.filter(v => v.pairHits > 0);
+    const q = $("dSearch").value.trim();
+    if (q) list = list.filter(v => matchesSearch(q, v.match.country, v.match.league));
+    const minRounds = +$("dMinRounds").value || 0;
+    const minPair = +$("dMinPair").value || 0;
+    if (minRounds) list = list.filter(v => v.drought && v.drought.rounds >= minRounds);
+    if (minPair) list = list.filter(v => v.tracked && (v.sinceLast == null ? v.pairMeetings : v.sinceLast) >= minPair);
 
     if (!list.length) {
-        $("dailyResult").innerHTML = `<p class="muted">Brak meczów${$("dTracked").checked ? " w Twoich ligach" : ""} tego dnia.</p>`;
+        $("dailyResult").innerHTML = `<p class="muted">Brak meczów tego dnia${state.daily.length ? " spełniających filtry" : ""}.</p>`;
         return;
     }
 
@@ -341,17 +408,40 @@ function renderDaily() {
     const withHits = list.filter(v => v.pairHits > 0).length;
     const ev = [...state.events].join(", ") || "—";
 
+    // sekcje według suszy ligi (kolejki bez zdarzenia przed pierwszym meczem dnia), od najdłuższej;
+    // na dole "bez suszy" (0 kolejek), na samym końcu ligi bez danych w bazie
+    const dryOf = (rows) => rows[0].tracked && rows[0].drought ? rows[0].drought.rounds : -1;
+    const sections = new Map();
+    [...groups.entries()]
+        .sort((a, b) => dryOf(b[1]) - dryOf(a[1]) || (b[1][0].drought?.matches ?? 0) - (a[1][0].drought?.matches ?? 0))
+        .forEach(([league, rows]) => {
+            const k = dryOf(rows);
+            if (!sections.has(k)) sections.set(k, []);
+            sections.get(k).push([league, rows]);
+        });
+    const dryEv = $("dDryEvents").selectedOptions[0].textContent;
+    const sectionTitle = (k, groupsIn) => {
+        const n = groupsIn.reduce((a, [, r]) => a + r.length, 0);
+        const what = `${groupsIn.length} ${groupsIn.length === 1 ? "liga" : "lig(i)"} · ${n} ${meczeWord(n)}`;
+        if (k < 0) return `Ligi bez danych w bazie <span class="muted small">· ${what}</span>`;
+        if (k === 0) return `Bez suszy <span class="muted small">· ostatnia kolejka miała ${esc(dryEv)} · ${what}</span>`;
+        return `Susza ${k} ${kolejekWord(k)} <span class="muted small">· bez ${esc(dryEv)} · ${what}</span>`;
+    };
+
     $("dailyResult").innerHTML = `
         <p class="muted small">${list.length} meczów · ${withHits} par miało wcześniej zdarzenie (${esc(ev)}) · kliknij mecz, aby zobaczyć historię pary${state.dailyOddsLoading ? " · kursy 1X2 ładują się…" : ""}</p>
         <table><thead><tr>
             <th>Godz.</th><th>Mecz</th><th class="num">Wynik</th><th class="num">1 · X · 2</th>
             <th class="num" title="Ile razy ta para miała zdarzenie / ile razy grała">Para</th>
+            <th title="Wszystkie mecze tej pary w bazie (wszystkie ligi kraju): ile razy 1/2, 2/1, 1/X, 2/X">1/2 · 2/1 · 1/X · 2/X</th>
             <th>Ostatnie HT/FT pary</th>
             <th class="num" title="Gospodarz: zdarzenie / mecze w lidze">Gosp.</th>
             <th class="num" title="Gość: zdarzenie / mecze w lidze">Gość</th>
         </tr></thead><tbody>
-        ${[...groups.entries()].map(([league, rows]) => `
-            <tr class="league-head"><td colspan="8">${esc(league)} ${rows[0].tracked ? "" : `<span class="muted small">· liga spoza bazy</span>`}</td></tr>
+        ${[...sections.entries()].map(([k, groupsIn]) => `
+            <tr class="dry-section ${k >= 5 ? "long" : k <= 0 ? "none" : ""}"><td colspan="9">${sectionTitle(k, groupsIn)}</td></tr>
+            ${groupsIn.map(([league, rows]) => `
+            <tr class="league-head"><td colspan="9">${esc(league)} ${rows[0].tracked ? droughtLine(rows[0]) : `<span class="muted small">· liga spoza bazy</span>`}</td></tr>
             ${rows.map(v => {
                 const m = v.match;
                 const idx = state.daily.indexOf(v);
@@ -361,12 +451,13 @@ function renderDaily() {
                     <td class="num">${esc(m.score ?? "")}</td>
                     <td class="num odds">${m.odd1 ? `${m.odd1.toFixed(2)} · ${m.oddX.toFixed(2)} · ${m.odd2.toFixed(2)}` : ""}</td>
                     <td class="num">${v.tracked ? `<span class="pill ${v.pairHits ? "on" : ""}">${v.pairHits}/${v.pairMeetings}</span>` : ""}</td>
+                    <td>${v.tracked ? fourCell(v, m.league) : ""}</td>
                     <td><span class="hist">${v.pairHistory.slice(0, 6).map(h =>
                         `<span class="${state.events.has(h.htft) ? "on" : ""}" title="${esc(h.season)} ${esc(h.home)} – ${esc(h.away)} ${esc(h.scoreHT)} / ${esc(h.scoreFT)}">${esc(h.htft)}</span>`).join("")}</span></td>
                     <td class="num">${v.tracked ? teamCell(v.homeStats) : ""}</td>
                     <td class="num">${v.tracked ? teamCell(v.awayStats) : ""}</td>
                 </tr>`;
-            }).join("")}`).join("")}
+            }).join("")}`).join("")}`).join("")}
         </tbody></table>`;
 }
 
@@ -376,7 +467,7 @@ window.toggleDaily = (idx, tr) => {
     const body = v.pairHistory.length
         ? `<table>${matchRows(v.pairHistory, true)}</table>`
         : `<span class="muted">Brak wcześniejszych meczów tej pary w bazie.</span>`;
-    tr.insertAdjacentHTML("afterend", `<tr class="detail"><td colspan="8">${body}</td></tr>`);
+    tr.insertAdjacentHTML("afterend", `<tr class="detail"><td colspan="9">${body}</td></tr>`);
 };
 
 $("dUpdate").onclick = async () => {
@@ -393,6 +484,290 @@ $("dUpdate").onclick = async () => {
         pollStatus();
     } catch (e) {
         alert(e.message);
+    }
+};
+
+// ---------------- Historia ----------------
+
+const H_RANGES = {yesterday: ["Wczoraj", 1, 1], week: ["Ostatni tydzień", 7, 1], two: ["2 tygodnie", 14, 1], month: ["30 dni", 30, 1]};
+
+function setHistoryRange(key) {
+    const [, days, endOffset] = H_RANGES[key];
+    const to = new Date();
+    to.setDate(to.getDate() - endOffset);
+    const from = new Date(to);
+    from.setDate(from.getDate() - days + 1);
+    $("hFrom").value = isoDay(from);
+    $("hTo").value = isoDay(to);
+    state.historyRange = key;
+    loadHistory();
+}
+
+function renderHistoryRange() {
+    const box = $("hRange");
+    box.innerHTML = "";
+    Object.entries(H_RANGES).forEach(([k, [label]]) =>
+        box.appendChild(chip(label, state.historyRange === k, () => setHistoryRange(k))));
+}
+
+$("hFrom").onchange = $("hTo").onchange = () => { state.historyRange = null; loadHistory(); };
+let hSearchTimer;
+$("hSearch").oninput = () => { clearTimeout(hSearchTimer); hSearchTimer = setTimeout(loadHistory, 300); };
+$("hFrom2").onchange = $("hTo2").onchange = () => loadHistory();
+// domyślnie B = taki sam okres tuż przed A
+function ensureCompareRange() {
+    if (!$("hCompare").checked || $("hFrom2").value) return;
+    const a1 = new Date($("hFrom").value + "T12:00:00"), a2 = new Date($("hTo").value + "T12:00:00");
+    const len = Math.round((a2 - a1) / 864e5) + 1;
+    const b2 = new Date(a1); b2.setDate(b2.getDate() - 1);
+    const b1 = new Date(b2); b1.setDate(b1.getDate() - len + 1);
+    $("hFrom2").value = isoDay(b1);
+    $("hTo2").value = isoDay(b2);
+}
+
+{
+    const u = new URLSearchParams(location.search);
+    if (u.get("search")) $("hSearch").value = u.get("search");
+    if (u.get("from")) $("hFrom").value = u.get("from");
+    if (u.get("to")) $("hTo").value = u.get("to");
+    if (u.get("compare")) {
+        $("hCompare").checked = true;
+        $("hCmpFromBox").hidden = $("hCmpToBox").hidden = false;
+    }
+}
+
+$("hCompare").onchange = () => {
+    const on = $("hCompare").checked;
+    $("hCmpFromBox").hidden = $("hCmpToBox").hidden = !on;
+    loadHistory();
+};
+
+let historySeq = 0;
+
+async function loadHistory() {
+    if (!$("hFrom").value) {
+        const to = new Date();
+        to.setDate(to.getDate() - 1);
+        const from = new Date(to);
+        from.setDate(from.getDate() - 6);
+        $("hFrom").value = isoDay(from);
+        $("hTo").value = isoDay(to);
+        state.historyRange = "week";
+    }
+    renderHistoryRange();
+    ensureCompareRange();
+    const seq = ++historySeq;
+    $("historyDays").innerHTML = `<p class="muted">Liczę…</p>`;
+    $("historyLeagues").innerHTML = "";
+    try {
+        const p = new URLSearchParams({from: $("hFrom").value, to: $("hTo").value, onlyMine: false});
+        if ($("hSearch").value.trim()) p.set("search", $("hSearch").value.trim());
+        const compare = $("hCompare").checked && $("hFrom2").value && $("hTo2").value;
+        const p2 = new URLSearchParams(p);
+        if (compare) { p2.set("from", $("hFrom2").value); p2.set("to", $("hTo2").value); }
+        const sp = new URLSearchParams();
+        if ($("hSearch").value.trim()) sp.set("search", $("hSearch").value.trim());
+        const [h, h2, seasons] = await Promise.all([
+            api("/api/v2/history?" + p),
+            compare ? api("/api/v2/history?" + p2) : null,
+            api("/api/v2/history/seasons?" + sp),
+        ]);
+        if (seq !== historySeq) return;
+        state.history = h;
+        state.historyB = h2;
+        state.seasons = seasons;
+        renderHistory();
+        renderCompare();
+        renderSeasons();
+    } catch (e) {
+        if (seq === historySeq) $("historyDays").innerHTML = `<p class="muted">Błąd: ${esc(e.message)}</p>`;
+    }
+}
+
+function fourTds(counts, matches, bold) {
+    const sum2 = (counts["1/2"] || 0) + (counts["2/1"] || 0);
+    const sumX = (counts["1/X"] || 0) + (counts["2/X"] || 0);
+    const cell = (n) => `<td class="num">${n ? (bold ? `<b>${n}</b>` : n) : `<span class="muted">0</span>`}</td>`;
+    return FOUR.map(e => cell(counts[e] || 0)).join("")
+        + `<td class="num hl">${sum2} <span class="muted small">${pct(sum2, matches)}</span></td>`
+        + `<td class="num hl">${sumX} <span class="muted small">${pct(sumX, matches)}</span></td>`
+        + `<td class="num hl"><b>${sum2 + sumX}</b> <span class="muted small">${pct(sum2 + sumX, matches)}</span></td>`;
+}
+
+const FOUR_HEAD = `${FOUR.map(e => `<th class="num">${e}</th>`).join("")}
+    <th class="num hl">1/2+2/1</th><th class="num hl">1/X+2/X</th><th class="num hl">Razem 4</th>`;
+
+const WEEKDAYS = ["nd", "pn", "wt", "śr", "cz", "pt", "sb"];
+
+function renderHistory() {
+    const h = state.history;
+    $("historyLeagues").hidden = !h.matches;
+    if (!h.matches) {
+        $("historyDays").innerHTML = `<p class="muted">Brak zakończonych meczów${$("hSearch").value.trim() ? ` pasujących do „${esc($("hSearch").value.trim())}”` : ""} w bazie w tym zakresie.
+            Jeśli to świeże dni, kliknij „Dociągnij brakujące”.</p>`;
+        return;
+    }
+    $("historyDays").innerHTML = `
+        <h2>Dzień po dniu</h2>
+        <p class="muted small">${h.matches} meczów w bazie · kliknij dzień, aby zobaczyć mecze ze zdarzeniami · liczone z wyników zapisanych w bazie</p>
+        <table class="h-days"><thead><tr><th>Dzień</th><th class="num">Mecze</th>${FOUR_HEAD}</tr></thead><tbody>
+        ${h.days.map((d, i) => `<tr class="${d.events.length ? "clickable" : "zero"}" ${d.events.length ? `onclick="toggleHistoryDay(${i}, this)"` : ""}>
+            <td>${d.date} <span class="muted small">${WEEKDAYS[new Date(d.date + "T12:00:00").getDay()]}</span></td>
+            <td class="num">${d.matches}</td>${fourTds(d.counts, d.matches, true)}</tr>`).join("")}
+        <tr><td><b>Razem</b></td><td class="num"><b>${h.matches}</b></td>${fourTds(h.counts, h.matches, true)}</tr>
+        </tbody></table>`;
+
+    // podpowiedzi do wyszukiwarki - ligi z bieżącego zakresu (tylko bez aktywnego wyszukiwania, żeby lista nie malała)
+    if (!$("hSearch").value.trim()) {
+        $("hLeagueList").innerHTML = h.leagues.map(l => `<option value="${esc(l.league)}">`).join("");
+    }
+
+    const searching = !!$("hSearch").value.trim();
+    const leagues = h.leagues.filter(l => searching || l.events.length);
+    $("historyLeagues").hidden = !leagues.length;
+    $("historyLeagues").innerHTML = leagues.length ? `
+        <h2>Ligi w tym zakresie</h2>
+        <p class="muted small">${searching ? "ligi pasujące do wyszukiwania" : "tylko ligi, w których padło któreś z 4 zdarzeń"} · kliknij ligę, aby zobaczyć drużyny i mecze</p>
+        <table><thead><tr><th>Liga</th><th class="num">Mecze</th>${FOUR_HEAD}</tr></thead><tbody>
+        ${leagues.map(l => `<tr class="${l.events.length ? "clickable" : "zero"}" ${l.events.length ? `onclick="toggleHistoryLeague(${h.leagues.indexOf(l)}, this)"` : ""}>
+            <td>${esc(l.league)}</td><td class="num">${l.matches}</td>${fourTds(l.counts, l.matches, false)}</tr>`).join("")}
+        </tbody></table>` : "";
+}
+
+/** Tabela meczów ze zdarzeniami; showLeague=false w obrębie jednej ligi (wtedy kolumna z datą). */
+function eventMatchesTable(events, showLeague) {
+    const rows = events.map(({country, match: m}) => `<tr>
+        <td>${showLeague ? fmtTime(m.kickoff) : `${fmtDate(m.kickoff)} <span class="muted small">${fmtTime(m.kickoff)}</span>`}</td>
+        ${showLeague ? `<td>${esc(country)}: ${esc(m.league)}</td>` : ""}
+        <td><b>${esc(m.home)}</b> – <b>${esc(m.away)}</b></td>
+        <td class="num">${esc(m.scoreHT ?? "")}</td><td class="num">${esc(m.scoreFT ?? "")}</td>
+        <td class="event">${esc(m.htft)}</td>
+        <td class="muted small">${esc(eventWho(m))}</td></tr>`).join("");
+    return `<table><thead><tr><th>${showLeague ? "Godz." : "Data"}</th>${showLeague ? "<th>Liga</th>" : ""}<th>Mecz</th>
+        <th class="num">HT</th><th class="num">FT</th><th>HT/FT</th><th>Kto</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/** Krótki opis zdarzenia: kto prowadził do przerwy i co się stało. */
+function eventWho(m) {
+    const [ht, ft] = m.htft.split("/");
+    const leader = ht === "1" ? m.home : m.away;
+    if (ft === "X") return `${leader} prowadził(a) do przerwy, remis`;
+    return `${leader} prowadził(a), wygrał(a) ${ft === "1" ? m.home : m.away}`;
+}
+
+window.toggleHistoryLeague = (i, tr) => {
+    if (tr.nextElementSibling?.classList.contains("detail")) return tr.nextElementSibling.remove();
+    const l = state.history.leagues[i];
+    // drużyny, które brały udział w zdarzeniach (gospodarz lub gość), od najczęstszych
+    const teams = new Map();
+    l.events.forEach(({match: m}) => [m.home, m.away].forEach(t => teams.set(t, (teams.get(t) || 0) + 1)));
+    const teamList = [...teams.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([t, n]) => `<span class="pill ${n > 1 ? "on" : ""}">${esc(t)}${n > 1 ? ` ×${n}` : ""}</span>`).join(" ");
+    tr.insertAdjacentHTML("afterend", `<tr class="detail"><td colspan="9">
+        <p class="small"><b>Drużyny:</b> ${teamList}</p>
+        ${eventMatchesTable(l.events, false)}</td></tr>`);
+};
+
+const sum4 = (c) => FOUR.reduce((a, e) => a + (c[e] || 0), 0);
+
+/** Porównanie zakresu A z zakresem B: razem i per liga (ligi z obu zakresów). */
+function renderCompare() {
+    const box = $("historyCompare");
+    const a = state.history, b = state.historyB;
+    box.hidden = !b;
+    if (!b) return;
+    const label = (h) => h.from === h.to ? h.from : `${h.from} – ${h.to}`;
+    const byLeague = new Map();
+    a.leagues.forEach(l => byLeague.set(l.league, {a: l}));
+    b.leagues.forEach(l => byLeague.set(l.league, {...(byLeague.get(l.league) || {}), b: l}));
+    const empty = {matches: 0, counts: {}};
+    const side = (x) => FOUR.map(e => `<td class="num">${x.counts[e] || `<span class="muted">0</span>`}</td>`).join("")
+        + `<td class="num hl"><b>${sum4(x.counts)}</b> <span class="muted small">${pct(sum4(x.counts), x.matches)}</span></td>`;
+    const delta = (x, y) => {
+        const d = sum4(x.counts) - sum4(y.counts);
+        return `<td class="num"><b class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? "+" : ""}${d}</b></td>`;
+    };
+    const row = (name, x, y, cls = "") => `<tr class="${cls}"><td>${name}</td>
+        <td class="num">${x.matches}</td>${side(x)}<td class="sep"></td><td class="num">${y.matches}</td>${side(y)}${delta(x, y)}</tr>`;
+    const leagues = [...byLeague.entries()]
+        .filter(([, v]) => sum4((v.a || empty).counts) + sum4((v.b || empty).counts) > 0)
+        .sort((x, y) => (sum4((y[1].a || empty).counts) + sum4((y[1].b || empty).counts))
+            - (sum4((x[1].a || empty).counts) + sum4((x[1].b || empty).counts)) || x[0].localeCompare(y[0]));
+    const head4 = `<th class="num">Mecze</th>${FOUR.map(e => `<th class="num">${e}</th>`).join("")}<th class="num hl">Razem 4</th>`;
+    box.innerHTML = `<h2>Porównanie</h2>
+        <p class="muted small">A: <b>${label(a)}</b> vs B: <b>${label(b)}</b>${$("hSearch").value.trim() ? ` · ligi: „${esc($("hSearch").value.trim())}”` : ""} · różnica = A − B (razem 4 zdarzenia)</p>
+        <table class="compare"><thead>
+            <tr><th></th><th colspan="6">A: ${label(a)}</th><th class="sep"></th><th colspan="6">B: ${label(b)}</th><th></th></tr>
+            <tr><th>Liga</th>${head4}<th class="sep"></th>${head4}<th class="num">A − B</th></tr>
+        </thead><tbody>
+            ${row("<b>Razem</b>", a, b, "total")}
+            ${leagues.map(([name, v]) => row(esc(name), v.a || empty, v.b || empty)).join("")}
+        </tbody></table>`;
+}
+
+/** Sezony: wiersz = liga, kolumny = sezony (razem 4 zdarzenia / mecze); kliknięcie rozwija rozbicie na zdarzenia. */
+function renderSeasons() {
+    const list = state.seasons || [];
+    const box = $("historySeasons");
+    if (!list.length) { box.innerHTML = ""; return; }
+    const years = [...new Set(list.flatMap(l => l.seasons.map(s => s.year)))].sort((a, b) => b - a).slice(0, 6);
+    const searching = !!$("hSearch").value.trim();
+    box.innerHTML = `<h2>Sezony</h2>
+        <p class="muted small">${list.length} lig${searching ? "" : " · wpisz ligę/kraj w „Szukaj ligi”, żeby zawęzić"} ·
+            w komórce: 1/2+2/1+1/X+2/X / mecze i % · <span class="cur-tag">trwa</span> = bieżący sezon (dotychczas) · kliknij ligę, aby rozbić na zdarzenia</p>
+        <table class="seasons"><thead><tr><th>Liga</th>${years.map(y => `<th class="num">${y}</th>`).join("")}</tr></thead><tbody>
+        ${list.map((l, i) => `<tr class="clickable" onclick="toggleSeasons(${i}, this)"><td>${esc(l.league)}</td>
+            ${years.map(y => {
+                const s = l.seasons.find(x => x.year === y);
+                if (!s) return `<td class="num muted">–</td>`;
+                return `<td class="num ${s.current ? "cur" : ""}" title="${esc(s.label)}: ${FOUR.map(e => `${e} ${s.counts[e]}`).join(", ")}">
+                    <b>${sum4(s.counts)}</b>/${s.matches} <span class="muted small">${pct(sum4(s.counts), s.matches)}</span></td>`;
+            }).join("")}</tr>`).join("")}
+        </tbody></table>`;
+}
+
+window.toggleSeasons = (i, tr) => {
+    if (tr.nextElementSibling?.classList.contains("detail")) return tr.nextElementSibling.remove();
+    const l = state.seasons[i];
+    const rows = l.seasons.map(s => `<tr class="${s.current ? "cur-row" : ""}">
+        <td>${esc(s.label)} ${s.current ? `<span class="cur-tag">trwa · do ${fmtDate(s.lastMatch)}</span>` : ""}</td>
+        <td class="num">${s.matches}</td>${fourTds(s.counts, s.matches, true)}</tr>`).join("");
+    tr.insertAdjacentHTML("afterend", `<tr class="detail"><td colspan="7"><table>
+        <thead><tr><th>Sezon</th><th class="num">Mecze</th>${FOUR_HEAD}</tr></thead><tbody>${rows}</tbody></table></td></tr>`);
+};
+
+window.toggleHistoryDay = (i, tr) => {
+    if (tr.nextElementSibling?.classList.contains("detail")) return tr.nextElementSibling.remove();
+    const d = state.history.days[i];
+    tr.insertAdjacentHTML("afterend", `<tr class="detail"><td colspan="9">${eventMatchesTable(d.events, true)}</td></tr>`);
+};
+
+async function waitForRecorder() {
+    for (let i = 0; i < 120; i++) {
+        await new Promise(res => setTimeout(res, 5000));
+        const {pending} = await api("/api/v2/history/pending");
+        if (pending) $("hInfo").textContent = `Zapisuję w tle - zostało lig: ${pending}`;
+        if (!pending || i % 6 === 5) loadHistory();
+        if (!pending) {
+            $("hInfo").textContent = "Gotowe - baza aktualna.";
+            return;
+        }
+    }
+}
+
+$("hRefresh").onclick = async () => {
+    const btn = $("hRefresh");
+    btn.disabled = true;
+    $("hInfo").textContent = "Pobieram mecze z API dzień po dniu…";
+    try {
+        const p = new URLSearchParams({from: $("hFrom").value, to: $("hTo").value});
+        const r = await api("/api/v2/history/refresh?" + p, {method: "POST"});
+        $("hInfo").textContent = `Sprawdzono ${r.days} dni, zapisuję brakujące mecze w tle…`;
+        await waitForRecorder();
+    } catch (e) {
+        $("hInfo").textContent = "Błąd: " + e.message;
+    } finally {
+        btn.disabled = false;
     }
 };
 
@@ -780,6 +1155,28 @@ $("btnStartAll").onclick = () => {
 $("btnStop").onclick = async () => { await api("/api/v2/scrape/cancel", {method: "POST"}); pollStatus(); };
 
 let pollTimer;
+let wasRunning = false;
+
+$("raBtn").onclick = async () => {
+    try {
+        await api("/api/v2/scrape/start", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({countries: [], leagues: [], latestOnly: true}),
+        });
+    } catch (e) {
+        alert(e.message);
+    }
+    pollStatus();
+};
+
+/** Po zakończeniu pobierania odświeża aktualną zakładkę, żeby od razu było widać nowe wyniki. */
+function reloadCurrentView() {
+    if (state.view === "daily") loadDaily();
+    if (state.view === "history") loadHistory();
+    if (state.view === "strategy") loadStrategy();
+    if (state.view === "analysis") refresh();
+}
 
 async function pollStatus() {
     clearTimeout(pollTimer);
@@ -794,6 +1191,12 @@ async function pollStatus() {
     $("btnStart").disabled = s.running;
     $("btnStartAll").disabled = s.running;
     $("btnStop").disabled = !s.running;
+    $("raBtn").disabled = s.running;
+    $("raInfo").textContent = s.running
+        ? `pobieram: ${s.seasonsDone}/${s.seasonsTotal || "?"} sezonów · nowe mecze: ${s.matchesSaved}`
+        : (wasRunning ? `gotowe · nowe mecze: ${s.matchesSaved}${s.errors ? ` · błędy: ${s.errors}` : ""}` : "");
+    if (wasRunning && !s.running) reloadCurrentView();
+    wasRunning = s.running;
     if (s.running) pollTimer = setTimeout(pollStatus, 2000);
 }
 

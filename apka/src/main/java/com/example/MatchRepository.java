@@ -38,4 +38,21 @@ public interface MatchRepository extends JpaRepository<MatchEntity, Long> {
     List<MatchEntity> findCompetitionMatches(@Param("country") String country,
                                              @Param("league") String league,
                                              @Param("fromSeason") int fromSeason);
+
+    @Query("""
+            SELECT m FROM MatchEntity m
+            WHERE m.league IS NOT NULL AND m.HTFT IS NOT NULL
+              AND m.kickoff >= :from AND m.kickoff < :to
+            """)
+    List<MatchEntity> findFinishedBetween(@Param("from") java.time.LocalDateTime from,
+                                          @Param("to") java.time.LocalDateTime to);
+
+    /** Zbiorczo: kraj, liga, rok startu sezonu, etykieta sezonu, HT/FT, liczba meczów, ostatni mecz - od podanego sezonu. */
+    @Query("""
+            SELECT m.country, m.league, m.startSeasonYear, m.seasonLabel, m.HTFT, COUNT(m), MAX(m.kickoff)
+            FROM MatchEntity m
+            WHERE m.league IS NOT NULL AND m.HTFT IS NOT NULL AND m.startSeasonYear >= :fromSeason
+            GROUP BY m.country, m.league, m.startSeasonYear, m.seasonLabel, m.HTFT
+            """)
+    List<Object[]> countHtftBySeason(@Param("fromSeason") int fromSeason);
 }

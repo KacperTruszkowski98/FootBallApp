@@ -21,9 +21,11 @@ public class DailyController {
     public List<DailyService.DailyMatchView> daily(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) List<String> events,
-            @RequestParam(defaultValue = "true") boolean onlyTracked) throws Exception {
+            @RequestParam(defaultValue = "true") boolean onlyTracked,
+            @RequestParam(required = false) List<String> droughtEvents) throws Exception {
         LocalDate day = date != null ? date : LocalDate.now(ZoneId.of("Europe/Warsaw"));
-        return service.daily(day, events == null ? List.of() : events, onlyTracked);
+        return service.daily(day, events == null ? List.of() : events, onlyTracked,
+                droughtEvents == null || droughtEvents.isEmpty() ? com.example.history.HistoryService.EVENTS : droughtEvents);
     }
 
     /** Kursy 1X2 meczów dnia: externalId -> [1, X, 2]. Pierwsze wywołanie dla dnia może trwać do minuty, kolejne są szybkie. */

@@ -4,6 +4,7 @@ import com.example.MatchEntity;
 import com.example.MatchRepository;
 import com.example.analytics.AnalyticsService;
 import com.example.analytics.AnalyticsService.MatchView;
+import com.example.history.HistoryService;
 import com.example.source.DailySource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,8 +26,17 @@ public class DailyService {
     private final MatchRepository repository;
 
     public List<DailyMatchView> daily(LocalDate date, List<String> events, boolean onlyTracked) throws Exception {
+        return daily(date, events, onlyTracked, HistoryService.EVENTS);
+    }
+
+    /** droughtEvents - zdarzenia, dla których liczymy suszę ligi i "ile spotkań temu" pary (domyślnie wszystkie 4). */
+    public List<DailyMatchView> daily(LocalDate date, List<String> events, boolean onlyTracked,
+                                      List<String> droughtEvents) throws Exception {
         Set<String> wanted = new HashSet<>();
         events.forEach(e -> wanted.add(e.toUpperCase()));
+        Set<String> dry = new HashSet<>();
+        droughtEvents.forEach(e -> dry.add(e.toUpperCase()));
+        if (dry.isEmpty()) dry.addAll(HistoryService.EVENTS);
 
         Set<String> tracked = new HashSet<>();
         for (Object[] row : repository.findCompetitionKeys()) {
@@ -41,7 +51,7 @@ public class DailyService {
             if (onlyTracked && !isTracked) continue;
 
             if (!isTracked) {
-                result.add(new DailyMatchView(m, false, 0, 0, List.of(), null, null));
+                result.add(new DailyMatchView(m, false, 0, 0, List.of(), null, null, Map.of(), null, null, null));
                 continue;
             }
 
@@ -54,10 +64,27 @@ public class DailyService {
                     .toList();
             int pairHits = (int) pair.stream().filter(h -> wanted.contains(h.getHTFT().toUpperCase())).count();
 
+            // stałe rozbicie na 1/2, 2/1, 1/X, 2/X - niezależnie od wybranych chipów
+            Map<String, Integer> pairCounts = new LinkedHashMap<>();
+            HistoryService.EVENTS.forEach(e -> pairCounts.put(e, 0));
+            Integer sinceLast = null;
+            MatchEntity lastEvent = null;
+            for (int i = 0; i < pair.size(); i++) {
+                String htft = pair.get(i).getHTFT().toUpperCase();
+                if (!pairCounts.containsKey(htft)) continue;
+                pairCounts.merge(htft, 1, Integer::sum);
+                if (lastEvent == null && dry.contains(htft)) {
+                    lastEvent = pair.get(i);
+                    sinceLast = i;
+                }
+            }
+
             result.add(new DailyMatchView(m, true, pair.size(), pairHits,
                     pair.stream().limit(HISTORY_LIMIT).map(AnalyticsService.MatchView::of).toList(),
                     teamStats(history, m.home(), m.league(), wanted),
-                    teamStats(history, m.away(), m.league(), wanted)));
+                    teamStats(history, m.away(), m.league(), wanted),
+                    pairCounts, sinceLast, lastEvent == null ? null : MatchView.of(lastEvent),
+                    drought(history, m, dry)));
         }
 
         result.sort(Comparator
@@ -69,6 +96,41 @@ public class DailyService {
 
     public Map<String, double[]> odds(LocalDate date) throws Exception {
         return source.odds(date);
+    }
+
+    /**
+     * Susza w lidze meczu: ile kolejek (sezon + etap + runda) i meczów przed tym meczem nie było żadnego ze zdarzeń.
+     * Kolejka, w której padło ostatnie zdarzenie, się nie liczy.
+     */
+    static LeagueDrought drought(List<MatchEntity> history, DailyMatch m, Set<String> dry) {
+        List<MatchEntity> league = history.stream()
+                .filter(h -> h.getHTFT() != null && h.getKickoff() != null && m.league().equals(h.getLeague()))
+                .filter(h -> !m.externalId().equals(h.getExternalId()))
+                .filter(h -> m.kickoff() == null || h.getKickoff().isBefore(m.kickoff()))
+                .sorted(Comparator.comparing(MatchEntity::getKickoff).thenComparing(MatchEntity::getId).reversed())
+                .toList();
+        if (league.isEmpty()) return null;
+
+        Set<String> rounds = new HashSet<>();
+        int matches = 0;
+        MatchEntity last = null;
+        for (MatchEntity h : league) {
+            if (dry.contains(h.getHTFT().toUpperCase())) {
+                last = h;
+                break;
+            }
+            matches++;
+            rounds.add(roundKey(h));
+        }
+        if (last != null) rounds.remove(roundKey(last));
+        return new LeagueDrought(rounds.size(), matches, last == null ? null : MatchView.of(last),
+                MatchView.of(league.get(0)).kickoff());
+    }
+
+    private static String roundKey(MatchEntity h) {
+        String round = h.getRoundName() != null ? h.getRoundName()
+                : h.getCurrentRound() != null ? String.valueOf(h.getCurrentRound()) : h.getKickoff().toLocalDate().toString();
+        return h.getSeasonLabel() + "|" + h.getStage() + "|" + round;
     }
 
     private static TeamStats teamStats(List<MatchEntity> history, String team, String league, Set<String> wanted) {
@@ -90,10 +152,16 @@ public class DailyService {
         return country + "\u0000" + league;
     }
 
+    /** lastEvent null = w bazie nie było zdarzenia; lastInDb - ostatni mecz ligi w bazie (czy dane są świeże). */
+    public record LeagueDrought(int rounds, int matches, MatchView lastEvent, java.time.LocalDateTime lastInDb) {
+    }
+
     public record TeamStats(int matches, int hits) {
     }
 
     public record DailyMatchView(DailyMatch match, boolean tracked, int pairMeetings, int pairHits,
-                                 List<MatchView> pairHistory, TeamStats homeStats, TeamStats awayStats) {
+                                 List<MatchView> pairHistory, TeamStats homeStats, TeamStats awayStats,
+                                 Map<String, Integer> pairCounts, Integer sinceLast, MatchView lastEvent,
+                                 LeagueDrought drought) {
     }
 }
