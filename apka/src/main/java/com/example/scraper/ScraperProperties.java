@@ -53,13 +53,28 @@ public record ScraperProperties(
      * @param leagues  id lig z API-Football (GET /leagues?country=...), od najwyższego poziomu
      * @param names    nazwy lig w tej samej kolejności (do listy w UI - bez odpytywania API)
      * @param tiers    poziom rozgrywek każdej ligi; brak = kolejność na liście (1, 2, ...)
+     * @param cups     id pucharów z API-Football (GET /leagues?type=cup&country=...)
+     * @param cupNames nazwy pucharów w tej samej kolejności
      */
     public record ApiCountry(String slug, String name, Integer fromYear, Integer toYear, List<Integer> leagues,
-                             List<String> names, List<Integer> tiers) {
+                             List<String> names, List<Integer> tiers, List<Integer> cups, List<String> cupNames) {
         public ApiCountry {
             if (leagues == null) leagues = List.of();
             if (names == null) names = List.of();
             if (tiers == null) tiers = List.of();
+            if (cups == null) cups = List.of();
+            if (cupNames == null) cupNames = List.of();
+        }
+
+        /** Ligi i puchary - wszystko, co pobieramy dla kraju. */
+        public List<Integer> competitions() {
+            List<Integer> all = new java.util.ArrayList<>(leagues);
+            all.addAll(cups);
+            return all;
+        }
+
+        public String cupName(int index) {
+            return index < cupNames.size() ? cupNames.get(index) : String.valueOf(cups.get(index));
         }
 
         public String leagueName(int index) {

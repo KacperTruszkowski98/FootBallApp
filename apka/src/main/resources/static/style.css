@@ -254,3 +254,9 @@ input.sunk { width: 90px; }
 .hist span i { font-style: normal; font-size: 9px; opacity: .7; margin-left: 2px; }
 .pair-table tr.four-row td { background: var(--accent-soft); }
 td.year-hit { color: var(--accent); font-weight: 700; }
+
+/* Mecze dnia: drużyna z dużą liczbą zdarzeń w tym miesiącu */
+tr.month-hit td { background: color-mix(in srgb, #f5a623 12%, transparent); }
+.month-badge { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 8px; font-size: 11px; font-weight: 700;
+    background: #f5a623; color: #1a1a1a; white-space: nowrap; }
+.tier.cup { background: #f5a623; color: #1a1a1a; }

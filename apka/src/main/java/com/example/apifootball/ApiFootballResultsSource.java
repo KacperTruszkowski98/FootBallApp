@@ -52,8 +52,11 @@ public class ApiFootballResultsSource implements ResultsSource {
     public List<ConfiguredCountry> countries() {
         return properties.apiFootball().countries().stream()
                 .map(c -> new ConfiguredCountry(c.slug(), c.name() == null ? c.slug() : c.name(), c.fromYear(),
-                        java.util.stream.IntStream.range(0, c.leagues().size())
-                                .mapToObj(i -> new ConfiguredLeague(String.valueOf(c.leagues().get(i)), c.leagueName(i), c.tier(i)))
+                        java.util.stream.Stream.concat(
+                                java.util.stream.IntStream.range(0, c.leagues().size())
+                                        .mapToObj(i -> new ConfiguredLeague(String.valueOf(c.leagues().get(i)), c.leagueName(i), c.tier(i))),
+                                java.util.stream.IntStream.range(0, c.cups().size())
+                                        .mapToObj(i -> new ConfiguredLeague(String.valueOf(c.cups().get(i)), c.cupName(i), null, true)))
                                 .toList()))
                 .toList();
     }
@@ -72,7 +75,7 @@ public class ApiFootballResultsSource implements ResultsSource {
         List<LeagueSeason> seasons = new ArrayList<>();
 
         try {
-            for (Integer leagueId : config.leagues()) {
+            for (Integer leagueId : config.competitions()) {
                 JsonNode response = fetchLeague(leagueId);
                 if (response.isEmpty()) {
                     log.warn("Liga {} nie istnieje w API-Football", leagueId);
@@ -134,7 +137,7 @@ public class ApiFootballResultsSource implements ResultsSource {
     /** Zapisuje nowe mecze jednego sezonu ligi z konfiguracji (np. świeżo zakończone mecze dnia). */
     public ScrapeResult scrapeSeason(int leagueId, int year) throws Exception {
         String slug = properties.apiFootball().countries().stream()
-                .filter(c -> c.leagues().contains(leagueId))
+                .filter(c -> c.competitions().contains(leagueId))
                 .map(ScraperProperties.ApiCountry::slug)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Liga " + leagueId + " spoza konfiguracji"));

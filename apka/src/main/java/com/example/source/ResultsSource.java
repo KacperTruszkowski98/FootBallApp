@@ -29,9 +29,13 @@ public interface ResultsSource {
 
     /**
      * @param ref  identyfikator ligi w źródle - ten sam co {@link com.example.scraper.LeagueSeason#leagueRef()}
-     * @param tier poziom rozgrywek (1, 2) albo null, gdy nieznany
+     * @param tier poziom rozgrywek (1, 2) albo null, gdy nieznany (i dla pucharów)
+     * @param cup  puchar zamiast ligi
      */
-    record ConfiguredLeague(String ref, String name, Integer tier) {
+    record ConfiguredLeague(String ref, String name, Integer tier, boolean cup) {
+        public ConfiguredLeague(String ref, String name, Integer tier) {
+            this(ref, name, tier, false);
+        }
     }
 
     record ScrapeResult(int saved, int skipped, int failed, List<String> stages) {

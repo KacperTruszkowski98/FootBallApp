@@ -57,6 +57,20 @@
                 <span class="label" title="Ile ostatnich spotkań tej pary nie miało wybranych zdarzeń (pierwszy mecz pary też przechodzi)">Min. spotkań pary bez</span>
                 <input type="number" id="dMinPair" min="0" value="0">
             </label>
+            <label class="field">
+                <span class="label">Kolejność</span>
+                <select id="dOrder">
+                    <option value="drought">ligi wg suszy</option>
+                    <option value="time">godzina (od najwcześniejszych)</option>
+                </select>
+            </label>
+            <label class="field">
+                <span class="label" title="Mecz jest oznaczony 📅, gdy gospodarz albo gość miał w tym miesiącu kalendarzowym (wszystkie lata od 2021, jak w zakładce Miesiące) co najmniej tyle zaznaczonych zdarzeń HT/FT. 0 = bez oznaczania">Oznacz: min. zdarzeń drużyny w miesiącu</span>
+                <input type="number" id="dMonthMin" min="0" value="3">
+            </label>
+            <label class="check">
+                <input type="checkbox" id="dMonthOnly"> tylko oznaczone 📅
+            </label>
             <div class="field">
                 <span class="label">Dociągnij wyniki</span>
                 <button class="ghost" id="dUpdate" title="Pobiera nowe wyniki z bieżących sezonów krajów, które grają tego dnia">⟳ bieżące sezony</button>
@@ -164,6 +178,7 @@
                     <input type="search" id="cSearch" placeholder="Szukaj kraju / ligi…">
                     <button class="ghost" id="btnTier1">Wszystkie 1. ligi</button>
                     <button class="ghost" id="btnTier2">Wszystkie 2. ligi</button>
+                    <button class="ghost" id="btnCups">Wszystkie puchary</button>
                     <button class="ghost" id="btnNone">Odznacz</button>
                 </div>
             </div>

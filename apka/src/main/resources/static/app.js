@@ -108,6 +108,9 @@ $("dDate").onchange = loadDaily;
 $("dSearch").oninput = renderDaily;
 $("dHitsOnly").onchange = renderDaily;
 $("dMinRounds").oninput = $("dMinPair").oninput = renderDaily;
+$("dMonthOnly").onchange = renderDaily;
+$("dOrder").onchange = () => { store.set("daily.order", $("dOrder").value); renderDaily(); };
+$("dMonthMin").oninput = () => { store.set("daily.monthMin", $("dMonthMin").value); renderDaily(); };
 $("dDryEvents").onchange = loadDaily;
 $("dToday").onclick = () => { $("dDate").value = new URLSearchParams(location.search).get("date") || isoDay(new Date()); loadDaily(); };
 $("dPrev").onclick = () => shiftDay(-1);
@@ -214,8 +217,39 @@ window.openLeagueHistory = (e, q) => {
     showView("history");
 };
 
+const monthMin = () => +$("dMonthMin").value || 0;
+const monthHot = (s) => !!s && monthMin() > 0 && s.hits >= monthMin();
+const isMonthHit = (v) => monthHot(v.homeMonth) || monthHot(v.awayMonth);
+
+/** Znaczek 📅 przy drużynie, która w miesiącu meczu miała dużo zaznaczonych zdarzeń. */
+function monthBadge(s) {
+    if (!monthHot(s)) return "";
+    const month = MONTHS[new Date($("dDate").value + "T12:00:00").getMonth()];
+    const ev = [...state.events].join(", ");
+    return ` <span class="month-badge" title="${month}: ${s.hits}× (${esc(ev)}) w ${s.matches} ${meczeWord(s.matches)}, zdarzenie w ${s.yearsWithHit} z ${s.years} lat">📅${s.hits}</span>`;
+}
+
+function dailyRow(v, withLeague) {
+    const m = v.match;
+    const idx = state.daily.indexOf(v);
+    const league = withLeague ? `<br><span class="muted small">${esc(m.country)}: ${esc(m.league)}</span>` : "";
+    return `<tr class="clickable ${v.pairHits ? "hit" : ""} ${isMonthHit(v) ? "month-hit" : ""}" onclick="toggleDaily(${idx}, this)">
+        <td>${fmtTime(m.kickoff)}${m.status ? ` <span class="muted small">${esc(m.status)}</span>` : ""}</td>
+        <td><b>${esc(m.home)}</b>${monthBadge(v.homeMonth)} – <b>${esc(m.away)}</b>${monthBadge(v.awayMonth)}${league}</td>
+        <td class="num">${esc(m.score ?? "")}</td>
+        <td class="num odds">${m.odd1 ? `${m.odd1.toFixed(2)} · ${m.oddX.toFixed(2)} · ${m.odd2.toFixed(2)}` : ""}</td>
+        <td class="num">${v.tracked ? `<span class="pill ${v.pairHits ? "on" : ""}">${v.pairHits}/${v.pairMeetings}</span>` : ""}</td>
+        <td>${v.tracked ? fourCell(v, m.league) : ""}</td>
+        <td><span class="hist">${v.pairHistory.slice(0, 6).map(h =>
+            `<span class="${state.events.has(h.htft) ? "on" : ""}" title="${fmtDate(h.kickoff)} · ${esc(h.season)} · ${esc(h.home)} – ${esc(h.away)} · do przerwy ${esc(h.scoreHT)}, koniec ${esc(h.scoreFT)}">${esc(h.htft)}<i>’${String(h.kickoff ?? "").slice(2, 4)}</i></span>`).join("")}</span></td>
+        <td class="num">${v.tracked ? teamCell(v.homeStats) : ""}</td>
+        <td class="num">${v.tracked ? teamCell(v.awayStats) : ""}</td>
+    </tr>`;
+}
+
 function renderDaily() {
     let list = state.daily;
+    if ($("dMonthOnly").checked) list = list.filter(isMonthHit);
     if ($("dHitsOnly").checked) list = list.filter(v => v.pairHits > 0);
     const q = $("dSearch").value.trim();
     if (q) list = list.filter(v => matchesSearch(q, v.match.country, v.match.league));
@@ -239,6 +273,8 @@ function renderDaily() {
 
     const withHits = list.filter(v => v.pairHits > 0).length;
     const ev = [...state.events].join(", ") || "—";
+    const monthHits = list.filter(isMonthHit).length;
+    const byTime = $("dOrder").value === "time";
 
     // sekcje według suszy ligi (kolejki bez zdarzenia przed pierwszym meczem dnia), od najdłuższej;
     // na dole "bez suszy" (0 kolejek), na samym końcu ligi bez danych w bazie
@@ -261,7 +297,7 @@ function renderDaily() {
     };
 
     $("dailyResult").innerHTML = `
-        <p class="muted small">${list.length} meczów · ${withHits} par miało wcześniej zdarzenie (${esc(ev)}) · kliknij mecz, aby zobaczyć historię pary${state.dailyOddsLoading ? " · kursy 1X2 ładują się…" : ""}</p>
+        <p class="muted small">${list.length} meczów · ${withHits} par miało wcześniej zdarzenie (${esc(ev)})${monthMin() ? ` · 📅 ${monthHits} z drużyną z ≥ ${monthMin()} zdarzeń w tym miesiącu` : ""} · kliknij mecz, aby zobaczyć historię pary${state.dailyOddsLoading ? " · kursy 1X2 ładują się…" : ""}</p>
         <table><thead><tr>
             <th>Godz.</th><th>Mecz</th><th class="num">Wynik</th><th class="num">1 · X · 2</th>
             <th class="num" title="Ile razy ta para miała zdarzenie / ile razy grała">Para</th>
@@ -270,26 +306,14 @@ function renderDaily() {
             <th class="num" title="Gospodarz: zdarzenie / mecze w lidze">Gosp.</th>
             <th class="num" title="Gość: zdarzenie / mecze w lidze">Gość</th>
         </tr></thead><tbody>
-        ${[...sections.entries()].map(([k, groupsIn]) => `
+        ${byTime
+            ? [...list].sort((a, b) => String(a.match.kickoff ?? "~").localeCompare(String(b.match.kickoff ?? "~"))
+                || a.match.country.localeCompare(b.match.country)).map(v => dailyRow(v, true)).join("")
+            : [...sections.entries()].map(([k, groupsIn]) => `
             <tr class="dry-section ${k >= 5 ? "long" : k <= 0 ? "none" : ""}"><td colspan="9">${sectionTitle(k, groupsIn)}</td></tr>
             ${groupsIn.map(([league, rows]) => `
             <tr class="league-head"><td colspan="9">${esc(league)} ${rows[0].tracked ? droughtLine(rows[0]) : `<span class="muted small">· liga spoza bazy</span>`}</td></tr>
-            ${rows.map(v => {
-                const m = v.match;
-                const idx = state.daily.indexOf(v);
-                return `<tr class="clickable ${v.pairHits ? "hit" : ""}" onclick="toggleDaily(${idx}, this)">
-                    <td>${fmtTime(m.kickoff)}${m.status ? ` <span class="muted small">${esc(m.status)}</span>` : ""}</td>
-                    <td><b>${esc(m.home)}</b> – <b>${esc(m.away)}</b></td>
-                    <td class="num">${esc(m.score ?? "")}</td>
-                    <td class="num odds">${m.odd1 ? `${m.odd1.toFixed(2)} · ${m.oddX.toFixed(2)} · ${m.odd2.toFixed(2)}` : ""}</td>
-                    <td class="num">${v.tracked ? `<span class="pill ${v.pairHits ? "on" : ""}">${v.pairHits}/${v.pairMeetings}</span>` : ""}</td>
-                    <td>${v.tracked ? fourCell(v, m.league) : ""}</td>
-                    <td><span class="hist">${v.pairHistory.slice(0, 6).map(h =>
-                        `<span class="${state.events.has(h.htft) ? "on" : ""}" title="${fmtDate(h.kickoff)} · ${esc(h.season)} · ${esc(h.home)} – ${esc(h.away)} · do przerwy ${esc(h.scoreHT)}, koniec ${esc(h.scoreFT)}">${esc(h.htft)}<i>’${String(h.kickoff ?? "").slice(2, 4)}</i></span>`).join("")}</span></td>
-                    <td class="num">${v.tracked ? teamCell(v.homeStats) : ""}</td>
-                    <td class="num">${v.tracked ? teamCell(v.awayStats) : ""}</td>
-                </tr>`;
-            }).join("")}`).join("")}`).join("")}
+            ${rows.map(v => dailyRow(v, false)).join("")}`).join("")}`).join("")}
         </tbody></table>`;
 }
 
@@ -748,7 +772,7 @@ function renderCountries() {
             <button class="country-name" data-slug="${esc(c.slug)}" title="Zaznacz / odznacz wszystkie ligi">${esc(c.name)}
                 <span class="muted small">od ${c.fromYear ?? "?"}</span></button>
             ${c.leagues.map(l => `<label class="check"><input type="checkbox" data-ref="${esc(l.ref)}" ${state.selectedLeagues.has(l.ref) ? "checked" : ""}>
-                ${l.tier ? `<span class="tier">${l.tier}</span>` : ""}${esc(l.name)}</label>`).join("")}
+                ${l.cup ? `<span class="tier cup" title="Puchar">P</span>` : l.tier ? `<span class="tier">${l.tier}</span>` : ""}${esc(l.name)}</label>`).join("")}
           </div>`
         : `<div class="country-card"><label class="check"><input type="checkbox" data-slug="${esc(c.slug)}" ${state.selectedCountries.has(c.slug) ? "checked" : ""}>
             <b>${esc(c.name)}</b> <span class="muted small">od ${c.fromYear ?? "?"} · ligi wybierane automatycznie</span></label></div>`).join("")
@@ -772,13 +796,15 @@ function renderCountries() {
 }
 
 function selectTier(tier) {
-    state.countries.forEach(c => c.leagues.filter(l => l.tier === tier).forEach(l => state.selectedLeagues.add(l.ref)));
+    state.countries.forEach(c => c.leagues.filter(l => tier === "cup" ? l.cup : !l.cup && l.tier === tier)
+        .forEach(l => state.selectedLeagues.add(l.ref)));
     renderCountries();
 }
 
 $("cSearch").oninput = renderCountries;
 $("btnTier1").onclick = () => selectTier(1);
 $("btnTier2").onclick = () => selectTier(2);
+$("btnCups").onclick = () => selectTier("cup");
 $("btnNone").onclick = () => { state.selectedLeagues.clear(); state.selectedCountries.clear(); renderCountries(); };
 
 /** Kraje, które trzeba odpytać dla bieżącego zaznaczenia. */
@@ -885,6 +911,8 @@ async function pollStatus() {
 // ---------------- start ----------------
 
 renderEvents();
+$("dOrder").value = store.get("daily.order", "drought");
+$("dMonthMin").value = store.get("daily.monthMin", "3");
 loadScraperConfig();
 showView(new URLSearchParams(location.search).get("view") || "daily");
 pollStatus();

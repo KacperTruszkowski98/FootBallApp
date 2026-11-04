@@ -3,162 +3,165 @@
 # slug = nazwa kraju w API małymi literami; from-year = pierwszy sezon (rok startu).
 # leagues = id lig od najwyższego poziomu, names = ich nazwy (lista w zakładce Scraper),
 # tiers = poziom każdej ligi, gdy kilka lig jest na tym samym poziomie (np. Apertura i Clausura).
+# cups / cup-names = puchary kraju (GET /leagues?type=cup&country=<Kraj>): główny puchar krajowy, w kilku krajach też puchar ligi.
+# slug world = puchary kontynentalne klubów (w API kraj "World").
 scraper:
   api-football:
     countries:
-      - { slug: albania, name: "Albania", from-year: 2021, leagues: [ 310, 311 ], names: [ "Superliga", "1st Division" ] }
-      - { slug: algeria, name: "Algeria", from-year: 2021, leagues: [ 186, 187 ], names: [ "Ligue 1", "Ligue 2" ] }
-      - { slug: andorra, name: "Andorra", from-year: 2021, leagues: [ 312 ], names: [ "1a Divisió" ] }
+      - { slug: world, name: "Puchary międzynarodowe", from-year: 2021, leagues: [ ], cups: [ 2, 3, 848, 13, 11, 16, 17, 18, 12, 20 ], cup-names: [ "UEFA Champions League", "UEFA Europa League", "UEFA Europa Conference League", "CONMEBOL Libertadores", "CONMEBOL Sudamericana", "CONCACAF Champions League", "AFC Champions League Elite", "AFC Champions League Two", "CAF Champions League", "CAF Confederation Cup" ] }
+      - { slug: albania, name: "Albania", from-year: 2021, leagues: [ 310, 311 ], names: [ "Superliga", "1st Division" ], cups: [ 707 ], cup-names: [ "Cup" ] }
+      - { slug: algeria, name: "Algeria", from-year: 2021, leagues: [ 186, 187 ], names: [ "Ligue 1", "Ligue 2" ], cups: [ 514 ], cup-names: [ "Coupe Nationale" ] }
+      - { slug: andorra, name: "Andorra", from-year: 2021, leagues: [ 312 ], names: [ "1a Divisió" ], cups: [ 655 ], cup-names: [ "Copa Constitució" ] }
       - { slug: angola, name: "Angola", from-year: 2021, leagues: [ 397 ], names: [ "Girabola" ] }
       - { slug: antigua-and-barbuda, name: "Antigua And Barbuda", from-year: 2021, leagues: [ 1048 ], names: [ "Premier Division" ] }
-      - { slug: argentina, name: "Argentina", from-year: 2021, leagues: [ 128, 129 ], names: [ "Liga Profesional Argentina", "Primera Nacional" ] }
-      - { slug: armenia, name: "Armenia", from-year: 2021, leagues: [ 342, 343 ], names: [ "Premier League", "First League" ] }
+      - { slug: argentina, name: "Argentina", from-year: 2021, leagues: [ 128, 129 ], names: [ "Liga Profesional Argentina", "Primera Nacional" ], cups: [ 130 ], cup-names: [ "Copa Argentina" ] }
+      - { slug: armenia, name: "Armenia", from-year: 2021, leagues: [ 342, 343 ], names: [ "Premier League", "First League" ], cups: [ 709 ], cup-names: [ "Cup" ] }
       - { slug: aruba, name: "Aruba", from-year: 2021, leagues: [ 421 ], names: [ "Division di Honor" ] }
-      - { slug: australia, name: "Australia", from-year: 2021, leagues: [ 188 ], names: [ "A-League" ] }
-      - { slug: austria, name: "Austria", from-year: 2021, leagues: [ 218, 219 ], names: [ "Bundesliga", "2. Liga" ] }
-      - { slug: azerbaijan, name: "Azerbaijan", from-year: 2021, leagues: [ 419, 418 ], names: [ "Premyer Liqa", "Birinci Dasta" ] }
-      - { slug: bahrain, name: "Bahrain", from-year: 2021, leagues: [ 417 ], names: [ "Premier League" ] }
-      - { slug: bangladesh, name: "Bangladesh", from-year: 2021, leagues: [ 398 ], names: [ "Premier League" ] }
+      - { slug: australia, name: "Australia", from-year: 2021, leagues: [ 188 ], names: [ "A-League" ], cups: [ 874 ], cup-names: [ "Australia Cup" ] }
+      - { slug: austria, name: "Austria", from-year: 2021, leagues: [ 218, 219 ], names: [ "Bundesliga", "2. Liga" ], cups: [ 220 ], cup-names: [ "Cup" ] }
+      - { slug: azerbaijan, name: "Azerbaijan", from-year: 2021, leagues: [ 419, 418 ], names: [ "Premyer Liqa", "Birinci Dasta" ], cups: [ 420 ], cup-names: [ "Cup" ] }
+      - { slug: bahrain, name: "Bahrain", from-year: 2021, leagues: [ 417 ], names: [ "Premier League" ], cups: [ 1049 ], cup-names: [ "King's Cup" ] }
+      - { slug: bangladesh, name: "Bangladesh", from-year: 2021, leagues: [ 398 ], names: [ "Premier League" ], cups: [ 811 ], cup-names: [ "Federation Cup" ] }
       - { slug: barbados, name: "Barbados", from-year: 2021, leagues: [ 422 ], names: [ "Premier League" ] }
-      - { slug: belarus, name: "Belarus", from-year: 2021, leagues: [ 116, 117 ], names: [ "Premier League", "1. Division" ] }
-      - { slug: belgium, name: "Belgium", from-year: 2021, leagues: [ 144, 145 ], names: [ "Jupiler Pro League", "Challenger Pro League" ] }
+      - { slug: belarus, name: "Belarus", from-year: 2021, leagues: [ 116, 117 ], names: [ "Premier League", "1. Division" ], cups: [ 486 ], cup-names: [ "Coppa" ] }
+      - { slug: belgium, name: "Belgium", from-year: 2021, leagues: [ 144, 145 ], names: [ "Jupiler Pro League", "Challenger Pro League" ], cups: [ 147 ], cup-names: [ "Cup" ] }
       - { slug: belize, name: "Belize", from-year: 2021, leagues: [ 416 ], names: [ "Premier League" ] }
       - { slug: benin, name: "Benin", from-year: 2021, leagues: [ 415 ], names: [ "Championnat National" ] }
       - { slug: bhutan, name: "Bhutan", from-year: 2021, leagues: [ 1031, 413 ], names: [ "Premier League", "Super League" ] }
-      - { slug: bolivia, name: "Bolivia", from-year: 2021, leagues: [ 344, 710 ], names: [ "Primera División", "Nacional B" ] }
-      - { slug: bosnia, name: "Bosnia", from-year: 2021, leagues: [ 315, 316, 317 ], names: [ "Premijer Liga", "1st League - FBiH", "1st League - RS" ], tiers: [ 1, 2, 2 ] }
+      - { slug: bolivia, name: "Bolivia", from-year: 2021, leagues: [ 344, 710 ], names: [ "Primera División", "Nacional B" ], cups: [ 964 ], cup-names: [ "Copa de la División Profesional" ] }
+      - { slug: bosnia, name: "Bosnia", from-year: 2021, leagues: [ 315, 316, 317 ], names: [ "Premijer Liga", "1st League - FBiH", "1st League - RS" ], tiers: [ 1, 2, 2 ], cups: [ 314 ], cup-names: [ "Cup" ] }
       - { slug: botswana, name: "Botswana", from-year: 2021, leagues: [ 412 ], names: [ "Premier League" ] }
-      - { slug: brazil, name: "Brazil", from-year: 2021, leagues: [ 71, 72 ], names: [ "Serie A", "Serie B" ] }
-      - { slug: bulgaria, name: "Bulgaria", from-year: 2021, leagues: [ 172, 173 ], names: [ "First League", "Second League" ] }
+      - { slug: brazil, name: "Brazil", from-year: 2021, leagues: [ 71, 72 ], names: [ "Serie A", "Serie B" ], cups: [ 73 ], cup-names: [ "Copa Do Brasil" ] }
+      - { slug: bulgaria, name: "Bulgaria", from-year: 2021, leagues: [ 172, 173 ], names: [ "First League", "Second League" ], cups: [ 174 ], cup-names: [ "Cup" ] }
       - { slug: burkina-faso, name: "Burkina Faso", from-year: 2021, leagues: [ 423 ], names: [ "Ligue 1" ] }
       - { slug: burundi, name: "Burundi", from-year: 2021, leagues: [ 566 ], names: [ "Ligue A" ] }
-      - { slug: cambodia, name: "Cambodia", from-year: 2021, leagues: [ 410 ], names: [ "C-League" ] }
+      - { slug: cambodia, name: "Cambodia", from-year: 2021, leagues: [ 410 ], names: [ "C-League" ], cups: [ 1174 ], cup-names: [ "Hun Sen Cup" ] }
       - { slug: cameroon, name: "Cameroon", from-year: 2021, leagues: [ 411, 813 ], names: [ "Elite One", "Elite Two" ] }
-      - { slug: canada, name: "Canada", from-year: 2021, leagues: [ 479 ], names: [ "Canadian Premier League" ] }
-      - { slug: chile, name: "Chile", from-year: 2021, leagues: [ 265, 266 ], names: [ "Primera División", "Primera B" ] }
-      - { slug: china, name: "China", from-year: 2021, leagues: [ 169, 170 ], names: [ "Super League", "League One" ] }
+      - { slug: canada, name: "Canada", from-year: 2021, leagues: [ 479 ], names: [ "Canadian Premier League" ], cups: [ 259 ], cup-names: [ "Canadian Championship" ] }
+      - { slug: chile, name: "Chile", from-year: 2021, leagues: [ 265, 266 ], names: [ "Primera División", "Primera B" ], cups: [ 267 ], cup-names: [ "Copa Chile" ] }
+      - { slug: china, name: "China", from-year: 2021, leagues: [ 169, 170 ], names: [ "Super League", "League One" ], cups: [ 171 ], cup-names: [ "FA Cup" ] }
       - { slug: chinese-taipei, name: "Chinese Taipei", from-year: 2021, leagues: [ 589 ], names: [ "Taiwan Football Premier League" ] }
-      - { slug: colombia, name: "Colombia", from-year: 2021, leagues: [ 239, 240 ], names: [ "Primera A", "Primera B" ] }
+      - { slug: colombia, name: "Colombia", from-year: 2021, leagues: [ 239, 240 ], names: [ "Primera A", "Primera B" ], cups: [ 241 ], cup-names: [ "Copa Colombia" ] }
       - { slug: congo, name: "Congo", from-year: 2021, leagues: [ 844 ], names: [ "Ligue 1" ] }
       - { slug: congo-dr, name: "Congo DR", from-year: 2021, leagues: [ 424 ], names: [ "Ligue 1" ] }
-      - { slug: costa-rica, name: "Costa Rica", from-year: 2021, leagues: [ 162, 163 ], names: [ "Primera División", "Liga de Ascenso" ] }
-      - { slug: croatia, name: "Croatia", from-year: 2021, leagues: [ 210, 211 ], names: [ "HNL", "First NL" ] }
+      - { slug: costa-rica, name: "Costa Rica", from-year: 2021, leagues: [ 162, 163 ], names: [ "Primera División", "Liga de Ascenso" ], cups: [ 958 ], cup-names: [ "Copa Costa Rica" ] }
+      - { slug: croatia, name: "Croatia", from-year: 2021, leagues: [ 210, 211 ], names: [ "HNL", "First NL" ], cups: [ 212 ], cup-names: [ "Cup" ] }
       - { slug: cuba, name: "Cuba", from-year: 2021, leagues: [ 907 ], names: [ "Primera Division" ] }
-      - { slug: cyprus, name: "Cyprus", from-year: 2021, leagues: [ 318, 319 ], names: [ "1. Division", "2. Division" ] }
-      - { slug: czech-republic, name: "Czech Republic", from-year: 2021, leagues: [ 345, 346 ], names: [ "Czech Liga", "FNL" ] }
-      - { slug: denmark, name: "Denmark", from-year: 2021, leagues: [ 119, 120 ], names: [ "Superliga", "1. Division" ] }
+      - { slug: cyprus, name: "Cyprus", from-year: 2021, leagues: [ 318, 319 ], names: [ "1. Division", "2. Division" ], cups: [ 321 ], cup-names: [ "Cup" ] }
+      - { slug: czech-republic, name: "Czech Republic", from-year: 2021, leagues: [ 345, 346 ], names: [ "Czech Liga", "FNL" ], cups: [ 347 ], cup-names: [ "Cup" ] }
+      - { slug: denmark, name: "Denmark", from-year: 2021, leagues: [ 119, 120 ], names: [ "Superliga", "1. Division" ], cups: [ 121 ], cup-names: [ "DBU Pokalen" ] }
       - { slug: dominican-republic, name: "Dominican Republic", from-year: 2021, leagues: [ 759 ], names: [ "Liga Mayor" ] }
-      - { slug: ecuador, name: "Ecuador", from-year: 2021, leagues: [ 242, 243 ], names: [ "Liga Pro", "Liga Pro Serie B" ] }
-      - { slug: egypt, name: "Egypt", from-year: 2021, leagues: [ 233, 887 ], names: [ "Premier League", "Second League" ] }
+      - { slug: ecuador, name: "Ecuador", from-year: 2021, leagues: [ 242, 243 ], names: [ "Liga Pro", "Liga Pro Serie B" ], cups: [ 917 ], cup-names: [ "Copa Ecuador" ] }
+      - { slug: egypt, name: "Egypt", from-year: 2021, leagues: [ 233, 887 ], names: [ "Premier League", "Second League" ], cups: [ 714 ], cup-names: [ "Cup" ] }
       - { slug: el-salvador, name: "El Salvador", from-year: 2021, leagues: [ 370 ], names: [ "Primera Division" ] }
-      - { slug: england, name: "England", from-year: 2021, leagues: [ 39, 40 ], names: [ "Premier League", "Championship" ] }
-      - { slug: estonia, name: "Estonia", from-year: 2021, leagues: [ 329, 328 ], names: [ "Meistriliiga", "Esiliiga A" ] }
+      - { slug: england, name: "England", from-year: 2021, leagues: [ 39, 40 ], names: [ "Premier League", "Championship" ], cups: [ 45, 48 ], cup-names: [ "FA Cup", "League Cup" ] }
+      - { slug: estonia, name: "Estonia", from-year: 2021, leagues: [ 329, 328 ], names: [ "Meistriliiga", "Esiliiga A" ], cups: [ 657 ], cup-names: [ "Cup" ] }
       - { slug: eswatini, name: "Eswatini", from-year: 2021, leagues: [ 847 ], names: [ "Premier League" ] }
-      - { slug: ethiopia, name: "Ethiopia", from-year: 2021, leagues: [ 363 ], names: [ "Premier League" ] }
-      - { slug: faroe-islands, name: "Faroe Islands", from-year: 2021, leagues: [ 367, 366 ], names: [ "Meistaradeildin", "1. Deild" ] }
+      - { slug: ethiopia, name: "Ethiopia", from-year: 2021, leagues: [ 363 ], names: [ "Premier League" ], cups: [ 1228 ], cup-names: [ "Ethiopia Cup" ] }
+      - { slug: faroe-islands, name: "Faroe Islands", from-year: 2021, leagues: [ 367, 366 ], names: [ "Meistaradeildin", "1. Deild" ], cups: [ 491 ], cup-names: [ "Løgmanssteypid" ] }
       - { slug: fiji, name: "Fiji", from-year: 2021, leagues: [ 376 ], names: [ "National Football League" ] }
-      - { slug: finland, name: "Finland", from-year: 2021, leagues: [ 244, 245 ], names: [ "Veikkausliiga", "Ykkönen" ] }
-      - { slug: france, name: "France", from-year: 2021, leagues: [ 61, 62 ], names: [ "Ligue 1", "Ligue 2" ] }
+      - { slug: finland, name: "Finland", from-year: 2021, leagues: [ 244, 245 ], names: [ "Veikkausliiga", "Ykkönen" ], cups: [ 246 ], cup-names: [ "Suomen Cup" ] }
+      - { slug: france, name: "France", from-year: 2021, leagues: [ 61, 62 ], names: [ "Ligue 1", "Ligue 2" ], cups: [ 66 ], cup-names: [ "Coupe de France" ] }
       - { slug: gabon, name: "Gabon", from-year: 2021, leagues: [ 968 ], names: [ "Championnat D1" ] }
       - { slug: gambia, name: "Gambia", from-year: 2021, leagues: [ 845 ], names: [ "GFA League" ] }
-      - { slug: georgia, name: "Georgia", from-year: 2021, leagues: [ 327, 326 ], names: [ "Erovnuli Liga", "Erovnuli Liga 2" ] }
-      - { slug: germany, name: "Germany", from-year: 2021, leagues: [ 78, 79 ], names: [ "Bundesliga", "2. Bundesliga" ] }
-      - { slug: ghana, name: "Ghana", from-year: 2021, leagues: [ 570, 1196 ], names: [ "Premier League", "Division One League" ] }
-      - { slug: gibraltar, name: "Gibraltar", from-year: 2021, leagues: [ 758 ], names: [ "Premier Division" ] }
-      - { slug: greece, name: "Greece", from-year: 2021, leagues: [ 197, 494 ], names: [ "Super League 1", "Super League 2" ] }
+      - { slug: georgia, name: "Georgia", from-year: 2021, leagues: [ 327, 326 ], names: [ "Erovnuli Liga", "Erovnuli Liga 2" ], cups: [ 672 ], cup-names: [ "David Kipiani Cup" ] }
+      - { slug: germany, name: "Germany", from-year: 2021, leagues: [ 78, 79 ], names: [ "Bundesliga", "2. Bundesliga" ], cups: [ 81 ], cup-names: [ "DFB Pokal" ] }
+      - { slug: ghana, name: "Ghana", from-year: 2021, leagues: [ 570, 1196 ], names: [ "Premier League", "Division One League" ], cups: [ 966 ], cup-names: [ "Cup" ] }
+      - { slug: gibraltar, name: "Gibraltar", from-year: 2021, leagues: [ 758 ], names: [ "Premier Division" ], cups: [ 837 ], cup-names: [ "Rock Cup" ] }
+      - { slug: greece, name: "Greece", from-year: 2021, leagues: [ 197, 494 ], names: [ "Super League 1", "Super League 2" ], cups: [ 199 ], cup-names: [ "Cup" ] }
       - { slug: grenada, name: "Grenada", from-year: 2021, leagues: [ 1080 ], names: [ "Premier Division" ] }
       - { slug: guatemala, name: "Guatemala", from-year: 2021, leagues: [ 339 ], names: [ "Liga Nacional" ] }
       - { slug: guinea, name: "Guinea", from-year: 2021, leagues: [ 378 ], names: [ "Ligue 1" ] }
       - { slug: haiti, name: "Haiti", from-year: 2021, leagues: [ 379 ], names: [ "Ligue Haïtienne" ] }
       - { slug: honduras, name: "Honduras", from-year: 2021, leagues: [ 234 ], names: [ "Liga Nacional" ] }
-      - { slug: hong-kong, name: "Hong Kong", from-year: 2021, leagues: [ 380, 381 ], names: [ "Premier League", "HKFA 1st Division" ] }
-      - { slug: hungary, name: "Hungary", from-year: 2021, leagues: [ 271, 272 ], names: [ "NB I", "NB II" ] }
-      - { slug: iceland, name: "Iceland", from-year: 2021, leagues: [ 164, 165 ], names: [ "Úrvalsdeild", "1. Deild" ] }
+      - { slug: hong-kong, name: "Hong Kong", from-year: 2021, leagues: [ 380, 381 ], names: [ "Premier League", "HKFA 1st Division" ], cups: [ 544 ], cup-names: [ "FA Cup" ] }
+      - { slug: hungary, name: "Hungary", from-year: 2021, leagues: [ 271, 272 ], names: [ "NB I", "NB II" ], cups: [ 273 ], cup-names: [ "Magyar Kupa" ] }
+      - { slug: iceland, name: "Iceland", from-year: 2021, leagues: [ 164, 165 ], names: [ "Úrvalsdeild", "1. Deild" ], cups: [ 167 ], cup-names: [ "Cup" ] }
       - { slug: india, name: "India", from-year: 2021, leagues: [ 323, 324 ], names: [ "Indian Super League", "I-League" ] }
       - { slug: indonesia, name: "Indonesia", from-year: 2021, leagues: [ 274, 275 ], names: [ "Liga 1", "Liga 2" ] }
-      - { slug: iran, name: "Iran", from-year: 2021, leagues: [ 290, 291 ], names: [ "Persian Gulf Pro League", "Azadegan League" ] }
+      - { slug: iran, name: "Iran", from-year: 2021, leagues: [ 290, 291 ], names: [ "Persian Gulf Pro League", "Azadegan League" ], cups: [ 495 ], cup-names: [ "Hazfi Cup" ] }
       - { slug: iraq, name: "Iraq", from-year: 2021, leagues: [ 542 ], names: [ "Iraqi League" ] }
-      - { slug: ireland, name: "Ireland", from-year: 2021, leagues: [ 357, 358 ], names: [ "Premier Division", "First Division" ] }
-      - { slug: israel, name: "Israel", from-year: 2021, leagues: [ 383, 382 ], names: [ "Ligat Ha'al", "Liga Leumit" ] }
-      - { slug: italy, name: "Italy", from-year: 2021, leagues: [ 135, 136 ], names: [ "Serie A", "Serie B" ] }
+      - { slug: ireland, name: "Ireland", from-year: 2021, leagues: [ 357, 358 ], names: [ "Premier Division", "First Division" ], cups: [ 359 ], cup-names: [ "FAI Cup" ] }
+      - { slug: israel, name: "Israel", from-year: 2021, leagues: [ 383, 382 ], names: [ "Ligat Ha'al", "Liga Leumit" ], cups: [ 384 ], cup-names: [ "State Cup" ] }
+      - { slug: italy, name: "Italy", from-year: 2021, leagues: [ 135, 136 ], names: [ "Serie A", "Serie B" ], cups: [ 137 ], cup-names: [ "Coppa Italia" ] }
       - { slug: ivory-coast, name: "Ivory Coast", from-year: 2021, leagues: [ 386 ], names: [ "Ligue 1" ] }
       - { slug: jamaica, name: "Jamaica", from-year: 2021, leagues: [ 322 ], names: [ "Premier League" ] }
-      - { slug: japan, name: "Japan", from-year: 2021, leagues: [ 98, 99 ], names: [ "J1 League", "J2 League" ] }
-      - { slug: jordan, name: "Jordan", from-year: 2021, leagues: [ 387 ], names: [ "League" ] }
-      - { slug: kazakhstan, name: "Kazakhstan", from-year: 2021, leagues: [ 389, 388 ], names: [ "Premier League", "1. Division" ] }
+      - { slug: japan, name: "Japan", from-year: 2021, leagues: [ 98, 99 ], names: [ "J1 League", "J2 League" ], cups: [ 102, 101 ], cup-names: [ "Emperor Cup", "J-League Cup" ] }
+      - { slug: jordan, name: "Jordan", from-year: 2021, leagues: [ 387 ], names: [ "League" ], cups: [ 863 ], cup-names: [ "Cup" ] }
+      - { slug: kazakhstan, name: "Kazakhstan", from-year: 2021, leagues: [ 389, 388 ], names: [ "Premier League", "1. Division" ], cups: [ 498 ], cup-names: [ "Cup" ] }
       - { slug: kenya, name: "Kenya", from-year: 2021, leagues: [ 276, 277 ], names: [ "FKF Premier League", "Super League" ] }
-      - { slug: kosovo, name: "Kosovo", from-year: 2021, leagues: [ 664, 1195 ], names: [ "Superliga", "Liga E Pare" ] }
-      - { slug: kuwait, name: "Kuwait", from-year: 2021, leagues: [ 330, 331 ], names: [ "Premier League", "Division 1" ] }
+      - { slug: kosovo, name: "Kosovo", from-year: 2021, leagues: [ 664, 1195 ], names: [ "Superliga", "Liga E Pare" ], cups: [ 665 ], cup-names: [ "Cup" ] }
+      - { slug: kuwait, name: "Kuwait", from-year: 2021, leagues: [ 330, 331 ], names: [ "Premier League", "Division 1" ], cups: [ 720 ], cup-names: [ "Emir Cup" ] }
       - { slug: kyrgyzstan, name: "Kyrgyzstan", from-year: 2021, leagues: [ 569 ], names: [ "Premier League" ] }
       - { slug: laos, name: "Laos", from-year: 2021, leagues: [ 647 ], names: [ "Lao League" ] }
-      - { slug: latvia, name: "Latvia", from-year: 2021, leagues: [ 365, 364 ], names: [ "Virsliga", "1. Liga" ] }
-      - { slug: lebanon, name: "Lebanon", from-year: 2021, leagues: [ 390 ], names: [ "Premier League" ] }
+      - { slug: latvia, name: "Latvia", from-year: 2021, leagues: [ 365, 364 ], names: [ "Virsliga", "1. Liga" ], cups: [ 658 ], cup-names: [ "Cup" ] }
+      - { slug: lebanon, name: "Lebanon", from-year: 2021, leagues: [ 390 ], names: [ "Premier League" ], cups: [ 967 ], cup-names: [ "Cup" ] }
       - { slug: lesotho, name: "Lesotho", from-year: 2021, leagues: [ 962 ], names: [ "Premier League" ] }
       - { slug: liberia, name: "Liberia", from-year: 2021, leagues: [ 760 ], names: [ "LFA First Division" ] }
       - { slug: libya, name: "Libya", from-year: 2021, leagues: [ 584 ], names: [ "Premier League" ] }
-      - { slug: lithuania, name: "Lithuania", from-year: 2021, leagues: [ 362, 361 ], names: [ "A Lyga", "1 Lyga" ] }
-      - { slug: luxembourg, name: "Luxembourg", from-year: 2021, leagues: [ 261 ], names: [ "National Division" ] }
+      - { slug: lithuania, name: "Lithuania", from-year: 2021, leagues: [ 362, 361 ], names: [ "A Lyga", "1 Lyga" ], cups: [ 661 ], cup-names: [ "Cup" ] }
+      - { slug: luxembourg, name: "Luxembourg", from-year: 2021, leagues: [ 261 ], names: [ "National Division" ], cups: [ 721 ], cup-names: [ "Cup" ] }
       - { slug: macao, name: "Macao", from-year: 2021, leagues: [ 969 ], names: [ "Primeira Divisão" ] }
-      - { slug: macedonia, name: "Macedonia", from-year: 2021, leagues: [ 371, 372 ], names: [ "First League", "Second League" ] }
+      - { slug: macedonia, name: "Macedonia", from-year: 2021, leagues: [ 371, 372 ], names: [ "First League", "Second League" ], cups: [ 756 ], cup-names: [ "Cup" ] }
       - { slug: malawi, name: "Malawi", from-year: 2021, leagues: [ 391 ], names: [ "Super League" ] }
-      - { slug: malaysia, name: "Malaysia", from-year: 2021, leagues: [ 278 ], names: [ "Super League" ] }
+      - { slug: malaysia, name: "Malaysia", from-year: 2021, leagues: [ 278 ], names: [ "Super League" ], cups: [ 500 ], cup-names: [ "FA Cup" ] }
       - { slug: mali, name: "Mali", from-year: 2021, leagues: [ 598 ], names: [ "Première Division" ] }
-      - { slug: malta, name: "Malta", from-year: 2021, leagues: [ 393, 392 ], names: [ "Premier League", "Challenge League" ] }
+      - { slug: malta, name: "Malta", from-year: 2021, leagues: [ 393, 392 ], names: [ "Premier League", "Challenge League" ], cups: [ 821 ], cup-names: [ "FA Trophy" ] }
       - { slug: mauritania, name: "Mauritania", from-year: 2021, leagues: [ 762 ], names: [ "Premier League" ] }
       - { slug: mexico, name: "Mexico", from-year: 2021, leagues: [ 262, 263 ], names: [ "Liga MX", "Liga de Expansión MX" ] }
-      - { slug: moldova, name: "Moldova", from-year: 2021, leagues: [ 394, 395 ], names: [ "Super Liga", "Liga 1" ] }
+      - { slug: moldova, name: "Moldova", from-year: 2021, leagues: [ 394, 395 ], names: [ "Super Liga", "Liga 1" ], cups: [ 674 ], cup-names: [ "Cupa" ] }
       - { slug: mongolia, name: "Mongolia", from-year: 2021, leagues: [ 764 ], names: [ "Premier League" ] }
-      - { slug: montenegro, name: "Montenegro", from-year: 2021, leagues: [ 355, 356 ], names: [ "First League", "Second League" ] }
-      - { slug: morocco, name: "Morocco", from-year: 2021, leagues: [ 200, 201 ], names: [ "Botola Pro", "Botola 2" ] }
+      - { slug: montenegro, name: "Montenegro", from-year: 2021, leagues: [ 355, 356 ], names: [ "First League", "Second League" ], cups: [ 723 ], cup-names: [ "Cup" ] }
+      - { slug: morocco, name: "Morocco", from-year: 2021, leagues: [ 200, 201 ], names: [ "Botola Pro", "Botola 2" ], cups: [ 822 ], cup-names: [ "Cup" ] }
       - { slug: myanmar, name: "Myanmar", from-year: 2021, leagues: [ 588 ], names: [ "National League" ] }
-      - { slug: netherlands, name: "Netherlands", from-year: 2021, leagues: [ 88, 89 ], names: [ "Eredivisie", "Eerste Divisie" ] }
-      - { slug: new-zealand, name: "New Zealand", from-year: 2021, leagues: [ 955 ], names: [ "National League - National" ] }
-      - { slug: nicaragua, name: "Nicaragua", from-year: 2021, leagues: [ 396 ], names: [ "Primera Division" ] }
-      - { slug: nigeria, name: "Nigeria", from-year: 2021, leagues: [ 399 ], names: [ "NPFL" ] }
-      - { slug: northern-ireland, name: "Northern Ireland", from-year: 2021, leagues: [ 408, 407 ], names: [ "Premiership", "Championship" ] }
-      - { slug: norway, name: "Norway", from-year: 2021, leagues: [ 103, 104 ], names: [ "Eliteserien", "1. Division" ] }
-      - { slug: oman, name: "Oman", from-year: 2021, leagues: [ 406 ], names: [ "Professional League" ] }
+      - { slug: netherlands, name: "Netherlands", from-year: 2021, leagues: [ 88, 89 ], names: [ "Eredivisie", "Eerste Divisie" ], cups: [ 90 ], cup-names: [ "KNVB Beker" ] }
+      - { slug: new-zealand, name: "New Zealand", from-year: 2021, leagues: [ 955 ], names: [ "National League - National" ], cups: [ 1127 ], cup-names: [ "Chatham Cup" ] }
+      - { slug: nicaragua, name: "Nicaragua", from-year: 2021, leagues: [ 396 ], names: [ "Primera Division" ], cups: [ 1187 ], cup-names: [ "Copa Nicaragua" ] }
+      - { slug: nigeria, name: "Nigeria", from-year: 2021, leagues: [ 399 ], names: [ "NPFL" ], cups: [ 1231 ], cup-names: [ "Federation Cup" ] }
+      - { slug: northern-ireland, name: "Northern Ireland", from-year: 2021, leagues: [ 408, 407 ], names: [ "Premiership", "Championship" ], cups: [ 757 ], cup-names: [ "Irish Cup" ] }
+      - { slug: norway, name: "Norway", from-year: 2021, leagues: [ 103, 104 ], names: [ "Eliteserien", "1. Division" ], cups: [ 105 ], cup-names: [ "NM Cupen" ] }
+      - { slug: oman, name: "Oman", from-year: 2021, leagues: [ 406 ], names: [ "Professional League" ], cups: [ 726 ], cup-names: [ "Sultan Cup" ] }
       - { slug: panama, name: "Panama", from-year: 2021, leagues: [ 304 ], names: [ "Liga Panameña de Fútbol" ] }
-      - { slug: paraguay, name: "Paraguay", from-year: 2021, leagues: [ 250, 252, 251 ], names: [ "Division Profesional - Apertura", "Division Profesional - Clausura", "Division Intermedia" ], tiers: [ 1, 1, 2 ] }
+      - { slug: paraguay, name: "Paraguay", from-year: 2021, leagues: [ 250, 252, 251 ], names: [ "Division Profesional - Apertura", "Division Profesional - Clausura", "Division Intermedia" ], tiers: [ 1, 1, 2 ], cups: [ 501 ], cup-names: [ "Copa Paraguay" ] }
       - { slug: peru, name: "Peru", from-year: 2021, leagues: [ 281, 282 ], names: [ "Primera División", "Segunda División" ] }
       - { slug: philippines, name: "Philippines", from-year: 2021, leagues: [ 765 ], names: [ "PFL" ] }
-      - { slug: poland, name: "Poland", from-year: 2021, leagues: [ 106, 107 ], names: [ "Ekstraklasa", "I Liga" ] }
-      - { slug: portugal, name: "Portugal", from-year: 2021, leagues: [ 94, 95 ], names: [ "Primeira Liga", "Segunda Liga" ] }
-      - { slug: qatar, name: "Qatar", from-year: 2021, leagues: [ 305, 306 ], names: [ "Stars League", "Second Division" ] }
-      - { slug: romania, name: "Romania", from-year: 2021, leagues: [ 283, 284 ], names: [ "Liga I", "Liga II" ] }
-      - { slug: russia, name: "Russia", from-year: 2021, leagues: [ 235, 236 ], names: [ "Premier League", "First League" ] }
+      - { slug: poland, name: "Poland", from-year: 2021, leagues: [ 106, 107 ], names: [ "Ekstraklasa", "I Liga" ], cups: [ 108 ], cup-names: [ "Cup" ] }
+      - { slug: portugal, name: "Portugal", from-year: 2021, leagues: [ 94, 95 ], names: [ "Primeira Liga", "Segunda Liga" ], cups: [ 96, 97 ], cup-names: [ "Taça de Portugal", "Taça da Liga" ] }
+      - { slug: qatar, name: "Qatar", from-year: 2021, leagues: [ 305, 306 ], names: [ "Stars League", "Second Division" ], cups: [ 824 ], cup-names: [ "Emir Cup" ] }
+      - { slug: romania, name: "Romania", from-year: 2021, leagues: [ 283, 284 ], names: [ "Liga I", "Liga II" ], cups: [ 285 ], cup-names: [ "Cupa României" ] }
+      - { slug: russia, name: "Russia", from-year: 2021, leagues: [ 235, 236 ], names: [ "Premier League", "First League" ], cups: [ 237 ], cup-names: [ "Cup" ] }
       - { slug: rwanda, name: "Rwanda", from-year: 2021, leagues: [ 405 ], names: [ "National Soccer League" ] }
-      - { slug: san-marino, name: "San Marino", from-year: 2021, leagues: [ 404 ], names: [ "Campionato" ] }
-      - { slug: saudi-arabia, name: "Saudi Arabia", from-year: 2021, leagues: [ 307, 308 ], names: [ "Pro League", "Division 1" ] }
-      - { slug: scotland, name: "Scotland", from-year: 2021, leagues: [ 179, 180 ], names: [ "Premiership", "Championship" ] }
+      - { slug: san-marino, name: "San Marino", from-year: 2021, leagues: [ 404 ], names: [ "Campionato" ], cups: [ 729 ], cup-names: [ "Coppa Titano" ] }
+      - { slug: saudi-arabia, name: "Saudi Arabia", from-year: 2021, leagues: [ 307, 308 ], names: [ "Pro League", "Division 1" ], cups: [ 504 ], cup-names: [ "King's Cup" ] }
+      - { slug: scotland, name: "Scotland", from-year: 2021, leagues: [ 179, 180 ], names: [ "Premiership", "Championship" ], cups: [ 181, 185 ], cup-names: [ "FA Cup", "League Cup" ] }
       - { slug: senegal, name: "Senegal", from-year: 2021, leagues: [ 403 ], names: [ "Ligue 1" ] }
-      - { slug: serbia, name: "Serbia", from-year: 2021, leagues: [ 286, 287 ], names: [ "Super Liga", "Prva Liga" ] }
-      - { slug: singapore, name: "Singapore", from-year: 2021, leagues: [ 368 ], names: [ "Premier League" ] }
-      - { slug: slovakia, name: "Slovakia", from-year: 2021, leagues: [ 332, 506 ], names: [ "Super Liga", "2. liga" ] }
-      - { slug: slovenia, name: "Slovenia", from-year: 2021, leagues: [ 373, 374 ], names: [ "1. SNL", "2. SNL" ] }
-      - { slug: south-africa, name: "South Africa", from-year: 2021, leagues: [ 288, 289 ], names: [ "Premier Soccer League", "1st Division" ] }
-      - { slug: south-korea, name: "South Korea", from-year: 2021, leagues: [ 292, 293 ], names: [ "K League 1", "K League 2" ] }
-      - { slug: spain, name: "Spain", from-year: 2021, leagues: [ 140, 141 ], names: [ "La Liga", "Segunda División" ] }
+      - { slug: serbia, name: "Serbia", from-year: 2021, leagues: [ 286, 287 ], names: [ "Super Liga", "Prva Liga" ], cups: [ 732 ], cup-names: [ "Cup" ] }
+      - { slug: singapore, name: "Singapore", from-year: 2021, leagues: [ 368 ], names: [ "Premier League" ], cups: [ 959 ], cup-names: [ "Cup" ] }
+      - { slug: slovakia, name: "Slovakia", from-year: 2021, leagues: [ 332, 506 ], names: [ "Super Liga", "2. liga" ], cups: [ 680 ], cup-names: [ "Cup" ] }
+      - { slug: slovenia, name: "Slovenia", from-year: 2021, leagues: [ 373, 374 ], names: [ "1. SNL", "2. SNL" ], cups: [ 375 ], cup-names: [ "Cup" ] }
+      - { slug: south-africa, name: "South Africa", from-year: 2021, leagues: [ 288, 289 ], names: [ "Premier Soccer League", "1st Division" ], cups: [ 507 ], cup-names: [ "Cup" ] }
+      - { slug: south-korea, name: "South Korea", from-year: 2021, leagues: [ 292, 293 ], names: [ "K League 1", "K League 2" ], cups: [ 294 ], cup-names: [ "FA Cup" ] }
+      - { slug: spain, name: "Spain", from-year: 2021, leagues: [ 140, 141 ], names: [ "La Liga", "Segunda División" ], cups: [ 143 ], cup-names: [ "Copa del Rey" ] }
       - { slug: sudan, name: "Sudan", from-year: 2021, leagues: [ 402 ], names: [ "Sudani Premier League" ] }
       - { slug: suriname, name: "Suriname", from-year: 2021, leagues: [ 568 ], names: [ "Eerste Divisie" ] }
-      - { slug: sweden, name: "Sweden", from-year: 2021, leagues: [ 113, 114 ], names: [ "Allsvenskan", "Superettan" ] }
-      - { slug: switzerland, name: "Switzerland", from-year: 2021, leagues: [ 207, 208 ], names: [ "Super League", "Challenge League" ] }
+      - { slug: sweden, name: "Sweden", from-year: 2021, leagues: [ 113, 114 ], names: [ "Allsvenskan", "Superettan" ], cups: [ 115 ], cup-names: [ "Svenska Cupen" ] }
+      - { slug: switzerland, name: "Switzerland", from-year: 2021, leagues: [ 207, 208 ], names: [ "Super League", "Challenge League" ], cups: [ 209 ], cup-names: [ "Schweizer Cup" ] }
       - { slug: syria, name: "Syria", from-year: 2021, leagues: [ 425 ], names: [ "Premier League" ] }
       - { slug: tajikistan, name: "Tajikistan", from-year: 2021, leagues: [ 571 ], names: [ "Vysshaya Liga" ] }
       - { slug: tanzania, name: "Tanzania", from-year: 2021, leagues: [ 567 ], names: [ "Ligi kuu Bara" ] }
-      - { slug: thailand, name: "Thailand", from-year: 2021, leagues: [ 296, 297 ], names: [ "Thai League 1", "Thai League 2" ] }
+      - { slug: thailand, name: "Thailand", from-year: 2021, leagues: [ 296, 297 ], names: [ "Thai League 1", "Thai League 2" ], cups: [ 298 ], cup-names: [ "FA Cup" ] }
       - { slug: trinidad-and-tobago, name: "Trinidad And Tobago", from-year: 2021, leagues: [ 591 ], names: [ "Pro League" ] }
-      - { slug: tunisia, name: "Tunisia", from-year: 2021, leagues: [ 202, 828 ], names: [ "Ligue 1", "Ligue 2" ] }
-      - { slug: turkey, name: "Turkey", from-year: 2021, leagues: [ 203, 204 ], names: [ "Süper Lig", "1. Lig" ] }
+      - { slug: tunisia, name: "Tunisia", from-year: 2021, leagues: [ 202, 828 ], names: [ "Ligue 1", "Ligue 2" ], cups: [ 511 ], cup-names: [ "Cup" ] }
+      - { slug: turkey, name: "Turkey", from-year: 2021, leagues: [ 203, 204 ], names: [ "Süper Lig", "1. Lig" ], cups: [ 206 ], cup-names: [ "Türkiye Kupası" ] }
       - { slug: turkmenistan, name: "Turkmenistan", from-year: 2021, leagues: [ 636 ], names: [ "Ýokary Liga" ] }
-      - { slug: usa, name: "USA", from-year: 2021, leagues: [ 253, 255 ], names: [ "Major League Soccer", "USL Championship" ] }
+      - { slug: usa, name: "USA", from-year: 2021, leagues: [ 253, 255 ], names: [ "Major League Soccer", "USL Championship" ], cups: [ 257 ], cup-names: [ "US Open Cup" ] }
       - { slug: uganda, name: "Uganda", from-year: 2021, leagues: [ 585 ], names: [ "Premier League" ] }
-      - { slug: ukraine, name: "Ukraine", from-year: 2021, leagues: [ 333, 334 ], names: [ "Premier League", "Persha Liga" ] }
-      - { slug: united-arab-emirates, name: "United Arab Emirates", from-year: 2021, leagues: [ 301, 303 ], names: [ "Pro League", "Division 1" ] }
-      - { slug: uruguay, name: "Uruguay", from-year: 2021, leagues: [ 268, 270, 269 ], names: [ "Primera División", "Primera División - Clausura", "Segunda División" ], tiers: [ 1, 1, 2 ] }
-      - { slug: uzbekistan, name: "Uzbekistan", from-year: 2021, leagues: [ 369, 1075 ], names: [ "Super League", "Pro League A" ] }
-      - { slug: venezuela, name: "Venezuela", from-year: 2021, leagues: [ 299, 300 ], names: [ "Primera División", "Segunda División" ] }
-      - { slug: vietnam, name: "Vietnam", from-year: 2021, leagues: [ 340, 637 ], names: [ "V.League 1", "V.League 2" ] }
-      - { slug: wales, name: "Wales", from-year: 2021, leagues: [ 110, 111 ], names: [ "Premier League", "FAW Championship" ] }
+      - { slug: ukraine, name: "Ukraine", from-year: 2021, leagues: [ 333, 334 ], names: [ "Premier League", "Persha Liga" ], cups: [ 335 ], cup-names: [ "Cup" ] }
+      - { slug: united-arab-emirates, name: "United Arab Emirates", from-year: 2021, leagues: [ 301, 303 ], names: [ "Pro League", "Division 1" ], cups: [ 560 ], cup-names: [ "Presidents Cup" ] }
+      - { slug: uruguay, name: "Uruguay", from-year: 2021, leagues: [ 268, 270, 269 ], names: [ "Primera División", "Primera División - Clausura", "Segunda División" ], tiers: [ 1, 1, 2 ], cups: [ 930 ], cup-names: [ "Copa Uruguay" ] }
+      - { slug: uzbekistan, name: "Uzbekistan", from-year: 2021, leagues: [ 369, 1075 ], names: [ "Super League", "Pro League A" ], cups: [ 802 ], cup-names: [ "Cup" ] }
+      - { slug: venezuela, name: "Venezuela", from-year: 2021, leagues: [ 299, 300 ], names: [ "Primera División", "Segunda División" ], cups: [ 1113 ], cup-names: [ "Copa Venezuela" ] }
+      - { slug: vietnam, name: "Vietnam", from-year: 2021, leagues: [ 340, 637 ], names: [ "V.League 1", "V.League 2" ], cups: [ 341 ], cup-names: [ "Cup" ] }
+      - { slug: wales, name: "Wales", from-year: 2021, leagues: [ 110, 111 ], names: [ "Premier League", "FAW Championship" ], cups: [ 112 ], cup-names: [ "Welsh Cup" ] }
       - { slug: zambia, name: "Zambia", from-year: 2021, leagues: [ 400 ], names: [ "Super League" ] }
       - { slug: zimbabwe, name: "Zimbabwe", from-year: 2021, leagues: [ 401 ], names: [ "Premier Soccer League" ] }

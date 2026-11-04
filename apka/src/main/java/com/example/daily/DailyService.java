@@ -20,9 +20,14 @@ import java.util.*;
 public class DailyService {
 
     private static final int HISTORY_LIMIT = 50;
+    /** Statystyki miesiąca liczone od tego roku - jak domyślnie w zakładce Miesiące. */
+    static final int MONTH_FROM_YEAR = 2021;
+    private static final java.time.Duration MONTH_CACHE_TTL = java.time.Duration.ofMinutes(30);
+    private static final String WORLD = "World";
 
     private final DailySource source;
     private final MatchRepository repository;
+    private final Map<Integer, MonthCache> monthCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     public List<DailyMatchView> daily(LocalDate date, List<String> events, boolean onlyTracked) throws Exception {
         return daily(date, events, onlyTracked, HistoryService.EVENTS);
@@ -44,13 +49,15 @@ public class DailyService {
 
         Map<String, List<MatchEntity>> byCountry = new HashMap<>();
         List<DailyMatchView> result = new ArrayList<>();
+        MonthTeams month = monthTeams(date.getMonthValue());
 
         for (DailyMatch m : source.fetch(date)) {
             boolean isTracked = tracked.contains(key(m.country(), m.league()));
             if (onlyTracked && !isTracked) continue;
 
             if (!isTracked) {
-                result.add(new DailyMatchView(m, false, 0, 0, List.of(), null, null, Map.of(), null, null, null, Map.of()));
+                result.add(new DailyMatchView(m, false, 0, 0, List.of(), null, null, Map.of(), null, null, null, Map.of(),
+                        month.stats(m.country(), m.home(), wanted), month.stats(m.country(), m.away(), wanted)));
                 continue;
             }
 
@@ -84,7 +91,8 @@ public class DailyService {
                     teamStats(history, m.away(), m.league(), wanted),
                     pairCounts, sinceLast, lastEvent == null ? null : MatchView.of(lastEvent),
                     drought(history, m, dry),
-                    droughts(history, m)));
+                    droughts(history, m),
+                    month.stats(m.country(), m.home(), wanted), month.stats(m.country(), m.away(), wanted)));
         }
 
         result.sort(Comparator
@@ -92,6 +100,61 @@ public class DailyService {
                 .thenComparing(v -> v.match().country())
                 .thenComparing(v -> v.match().league()));
         return result;
+    }
+
+    /**
+     * Ile razy drużyna miała zdarzenia HT/FT w tym miesiącu kalendarzowym (wszystkie lata od {@link #MONTH_FROM_YEAR},
+     * ligi i puchary) - to samo co ranking w zakładce Miesiące. Zapamiętane na 30 minut, bo to cały miesiąc z bazy.
+     */
+    private MonthTeams monthTeams(int month) {
+        MonthCache cached = monthCache.get(month);
+        if (cached != null && cached.at().plus(MONTH_CACHE_TTL).isAfter(java.time.Instant.now())) return cached.teams();
+        MonthTeams teams = new MonthTeams();
+        for (MatchEntity h : repository.findFinishedInMonth(month, LocalDate.of(MONTH_FROM_YEAR, 1, 1).atStartOfDay())) {
+            if (h.getKickoff() == null) continue;
+            teams.add(h.getCountry(), h.getHome(), h.getKickoff().getYear(), h.getHTFT());
+            teams.add(h.getCountry(), h.getAway(), h.getKickoff().getYear(), h.getHTFT());
+        }
+        monthCache.put(month, new MonthCache(java.time.Instant.now(), teams));
+        return teams;
+    }
+
+    private record MonthCache(java.time.Instant at, MonthTeams teams) {
+    }
+
+    /** drużyna -> rok -> HT/FT -> liczba meczów; osobno po kraju i po samej nazwie (dla pucharów międzynarodowych). */
+    static final class MonthTeams {
+        private final Map<String, Map<Integer, Map<String, Integer>>> byCountryTeam = new HashMap<>();
+        private final Map<String, Map<Integer, Map<String, Integer>>> byTeam = new HashMap<>();
+
+        void add(String country, String team, int year, String htft) {
+            String e = htft.toUpperCase();
+            byCountryTeam.computeIfAbsent(country + "\u0000" + team, k -> new TreeMap<>())
+                    .computeIfAbsent(year, k -> new HashMap<>()).merge(e, 1, Integer::sum);
+            byTeam.computeIfAbsent(team, k -> new TreeMap<>())
+                    .computeIfAbsent(year, k -> new HashMap<>()).merge(e, 1, Integer::sum);
+        }
+
+        /** Mecz w pucharze międzynarodowym (kraj "World") - drużyna liczona ze wszystkich swoich rozgrywek. */
+        MonthStats stats(String country, String team, Set<String> wanted) {
+            var years = WORLD.equals(country) ? byTeam.get(team) : byCountryTeam.get(country + "\u0000" + team);
+            if (years == null) return null;
+            int matches = 0, hits = 0, yearsWithHit = 0;
+            for (Map<String, Integer> y : years.values()) {
+                int yearHits = 0;
+                for (var en : y.entrySet()) {
+                    matches += en.getValue();
+                    if (wanted.contains(en.getKey())) yearHits += en.getValue();
+                }
+                hits += yearHits;
+                if (yearHits > 0) yearsWithHit++;
+            }
+            return new MonthStats(matches, hits, yearsWithHit, years.size());
+        }
+    }
+
+    /** Statystyki drużyny w miesiącu meczu: mecze, zdarzenia, w ilu latach było zdarzenie / w ilu grała. */
+    public record MonthStats(int matches, int hits, int yearsWithHit, int years) {
     }
 
     public Map<String, double[]> odds(LocalDate date) throws Exception {
@@ -174,6 +237,7 @@ public class DailyService {
     public record DailyMatchView(DailyMatch match, boolean tracked, int pairMeetings, int pairHits,
                                  List<MatchView> pairHistory, TeamStats homeStats, TeamStats awayStats,
                                  Map<String, Integer> pairCounts, Integer sinceLast, MatchView lastEvent,
-                                 LeagueDrought drought, Map<String, LeagueDrought> droughts) {
+                                 LeagueDrought drought, Map<String, LeagueDrought> droughts,
+                                 MonthStats homeMonth, MonthStats awayMonth) {
     }
 }

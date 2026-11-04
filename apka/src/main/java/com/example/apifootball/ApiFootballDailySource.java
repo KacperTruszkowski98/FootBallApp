@@ -140,7 +140,7 @@ public class ApiFootballDailySource implements DailySource {
 
     private Map<Integer, String> trackedLeagues() {
         Map<Integer, String> tracked = new HashMap<>();
-        properties.apiFootball().countries().forEach(c -> c.leagues().forEach(id -> tracked.put(id, c.slug())));
+        properties.apiFootball().countries().forEach(c -> c.competitions().forEach(id -> tracked.put(id, c.slug())));
         return tracked;
     }
 
