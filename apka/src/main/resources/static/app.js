@@ -136,6 +136,7 @@ async function loadDaily() {
         if (seq !== dailySeq) return;
         state.daily = list;
         renderDaily();
+        refreshAutoLists();
         loadDailyOdds(seq, $("dDate").value);
     } catch (e) {
         if (seq === dailySeq) $("dailyResult").innerHTML = `<p class="muted">Błąd: ${esc(e.message)}</p>`;
@@ -233,9 +234,11 @@ function dailyRow(v, withLeague) {
     const m = v.match;
     const idx = state.daily.indexOf(v);
     const league = withLeague ? `<br><span class="muted small">${esc(m.country)}: ${esc(m.league)}</span>` : "";
+    const lists = [...listsFor(m.country, m.home), ...listsFor(m.country, m.away)];
+    const stripe = lists.length ? ` style="box-shadow: inset 4px 0 0 ${esc(lists[0].color)}"` : "";
     return `<tr class="clickable ${v.pairHits ? "hit" : ""} ${isMonthHit(v) ? "month-hit" : ""}" onclick="toggleDaily(${idx}, this)">
-        <td>${fmtTime(m.kickoff)}${m.status ? ` <span class="muted small">${esc(m.status)}</span>` : ""}</td>
-        <td><b>${esc(m.home)}</b>${monthBadge(v.homeMonth)} – <b>${esc(m.away)}</b>${monthBadge(v.awayMonth)}${league}</td>
+        <td${stripe}>${fmtTime(m.kickoff)}${m.status ? ` <span class="muted small">${esc(m.status)}</span>` : ""}</td>
+        <td><b>${esc(m.home)}</b>${listBadges(m.country, m.home)}${monthBadge(v.homeMonth)} – <b>${esc(m.away)}</b>${listBadges(m.country, m.away)}${monthBadge(v.awayMonth)}${league}</td>
         <td class="num">${esc(m.score ?? "")}</td>
         <td class="num odds">${m.odd1 ? `${m.odd1.toFixed(2)} · ${m.oddX.toFixed(2)} · ${m.odd2.toFixed(2)}` : ""}</td>
         <td class="num">${v.tracked ? `<span class="pill ${v.pairHits ? "on" : ""}">${v.pairHits}/${v.pairMeetings}</span>` : ""}</td>
@@ -249,6 +252,9 @@ function dailyRow(v, withLeague) {
 
 function renderDaily() {
     let list = state.daily;
+    const myOn = $("dMyLeagues").checked && state.myLeagues.size > 0;
+    if (myOn) list = list.filter(v => state.myLeagues.has(leagueKey(v.match)));
+    if ($("dListOnly").checked) list = list.filter(isListHit);
     if ($("dMonthOnly").checked) list = list.filter(isMonthHit);
     if ($("dHitsOnly").checked) list = list.filter(v => v.pairHits > 0);
     const q = $("dSearch").value.trim();
@@ -297,7 +303,7 @@ function renderDaily() {
     };
 
     $("dailyResult").innerHTML = `
-        <p class="muted small">${list.length} meczów · ${withHits} par miało wcześniej zdarzenie (${esc(ev)})${monthMin() ? ` · 📅 ${monthHits} z drużyną z ≥ ${monthMin()} zdarzeń w tym miesiącu` : ""} · kliknij mecz, aby zobaczyć historię pary${state.dailyOddsLoading ? " · kursy 1X2 ładują się…" : ""}</p>
+        <p class="muted small">${list.length} meczów${myOn ? ` (moje ligi: ${state.myLeagues.size})` : ""} · ${withHits} par miało wcześniej zdarzenie (${esc(ev)})${monthMin() ? ` · 📅 ${monthHits} z drużyną z ≥ ${monthMin()} zdarzeń w tym miesiącu` : ""} · kliknij mecz, aby zobaczyć historię pary${state.dailyOddsLoading ? " · kursy 1X2 ładują się…" : ""}</p>
         <table><thead><tr>
             <th>Godz.</th><th>Mecz</th><th class="num">Wynik</th><th class="num">1 · X · 2</th>
             <th class="num" title="Ile razy ta para miała zdarzenie / ile razy grała">Para</th>
@@ -312,10 +318,245 @@ function renderDaily() {
             : [...sections.entries()].map(([k, groupsIn]) => `
             <tr class="dry-section ${k >= 5 ? "long" : k <= 0 ? "none" : ""}"><td colspan="9">${sectionTitle(k, groupsIn)}</td></tr>
             ${groupsIn.map(([league, rows]) => `
-            <tr class="league-head"><td colspan="9">${esc(league)} ${rows[0].tracked ? droughtLine(rows[0]) : `<span class="muted small">· liga spoza bazy</span>`}</td></tr>
+            <tr class="league-head"><td colspan="9">${starButton(rows[0].match)}${esc(league)} ${rows[0].tracked ? droughtLine(rows[0]) : `<span class="muted small">· liga spoza bazy</span>`}</td></tr>
             ${rows.map(v => dailyRow(v, false)).join("")}`).join("")}`).join("")}
         </tbody></table>`;
 }
+
+// ---------------- Mecze dnia: moje ligi ----------------
+
+state.myLeagues = new Set();
+state.allLeagues = null;
+const leagueKey = (m) => `${m.country}: ${m.league}`;
+
+function saveMyLeagues() {
+    store.set("daily.myLeagues", [...state.myLeagues]);
+    $("dMyLeaguesCount").textContent = state.myLeagues.size ? `(${state.myLeagues.size})` : "(nie wybrano)";
+}
+
+function starButton(m) {
+    const on = state.myLeagues.has(leagueKey(m));
+    return `<button class="star ${on ? "on" : ""}" data-key="${esc(leagueKey(m))}" onclick="toggleMyLeague(event, this)"
+        title="${on ? "Usuń z moich lig" : "Dodaj do moich lig"}">${on ? "★" : "☆"}</button> `;
+}
+
+window.toggleMyLeague = (e, btn) => {
+    e.stopPropagation();
+    const k = btn.dataset.key;
+    state.myLeagues.has(k) ? state.myLeagues.delete(k) : state.myLeagues.add(k);
+    saveMyLeagues();
+    renderDaily();
+};
+
+$("dMyLeagues").onchange = () => { store.set("daily.myLeaguesOn", $("dMyLeagues").checked); renderDaily(); };
+$("dListOnly").onchange = () => { store.set("daily.listOnly", $("dListOnly").checked); renderDaily(); };
+
+function setupDialog(dlg) {
+    dlg.querySelector("[data-close]").onclick = () => dlg.close();
+    dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); // klik w tło
+}
+setupDialog($("leaguesDlg"));
+setupDialog($("listsDlg"));
+
+$("dLeaguesBtn").onclick = async () => {
+    $("leaguesDlg").showModal();
+    if (!state.allLeagues) {
+        $("lgList").innerHTML = `<p class="muted">Wczytuję ligi…</p>`;
+        try {
+            state.allLeagues = await api("/api/v2/daily/leagues");
+        } catch (e) {
+            $("lgList").innerHTML = `<p class="muted">Błąd: ${esc(e.message)}</p>`;
+            return;
+        }
+    }
+    renderLeaguePicker();
+};
+
+const visibleLeagues = () => {
+    const q = $("lgSearch").value.trim();
+    return (state.allLeagues || []).filter(l => !q || matchesSearch(q, l.country, l.league));
+};
+
+function renderLeaguePicker() {
+    const byCountry = new Map();
+    visibleLeagues().forEach(l => {
+        if (!byCountry.has(l.country)) byCountry.set(l.country, []);
+        byCountry.get(l.country).push(l);
+    });
+    // ligi zapamiętane, których nie ma już w bazie - żeby dało się je odznaczyć
+    const known = new Set((state.allLeagues || []).map(leagueKey));
+    const orphans = [...state.myLeagues].filter(k => !known.has(k));
+    $("lgCount").textContent = `zaznaczono: ${state.myLeagues.size}`;
+    $("lgList").innerHTML = [...byCountry.entries()].map(([country, leagues]) => `
+        <div class="country-card">
+            <button class="country-name" data-country="${esc(country)}" title="Zaznacz / odznacz cały kraj">${esc(country)}</button>
+            ${leagues.map(l => `<label class="check"><input type="checkbox" data-key="${esc(leagueKey(l))}"
+                ${state.myLeagues.has(leagueKey(l)) ? "checked" : ""}> ${esc(l.league)}</label>`).join("")}
+        </div>`).join("")
+        + (orphans.length ? `<div class="country-card"><b class="small">Spoza bazy</b>${orphans.map(k =>
+            `<label class="check"><input type="checkbox" data-key="${esc(k)}" checked> ${esc(k)}</label>`).join("")}</div>` : "")
+        || `<p class="muted">Brak lig.</p>`;
+    $("lgList").querySelectorAll("input[data-key]").forEach(cb => cb.onchange = () => {
+        cb.checked ? state.myLeagues.add(cb.dataset.key) : state.myLeagues.delete(cb.dataset.key);
+        afterLeaguePick();
+    });
+    $("lgList").querySelectorAll("button[data-country]").forEach(b => b.onclick = () => {
+        const keys = byCountry.get(b.dataset.country).map(leagueKey);
+        const all = keys.every(k => state.myLeagues.has(k));
+        keys.forEach(k => all ? state.myLeagues.delete(k) : state.myLeagues.add(k));
+        afterLeaguePick();
+    });
+}
+
+function afterLeaguePick() {
+    saveMyLeagues();
+    if (state.myLeagues.size && !$("dMyLeagues").checked) {
+        $("dMyLeagues").checked = true; // wybranie lig od razu włącza filtr
+        store.set("daily.myLeaguesOn", true);
+    }
+    renderLeaguePicker();
+    renderDaily();
+}
+
+$("lgSearch").oninput = renderLeaguePicker;
+$("lgVisible").onclick = () => { visibleLeagues().forEach(l => state.myLeagues.add(leagueKey(l))); afterLeaguePick(); };
+$("lgNone").onclick = () => { state.myLeagues.clear(); afterLeaguePick(); };
+
+// ---------------- Mecze dnia: kolorowe listy drużyn ----------------
+
+const TL_DEFAULT = () => [
+    {name: "Lamaki", color: "#e5484d", events: ["1/2", "2/1"], top: 20, sort: "YEARS", auto: true, on: true, month: null, teams: []},
+    {name: "1/X + 2/X", color: "#3b82f6", events: ["1/X", "2/X"], top: 20, sort: "YEARS", auto: true, on: true, month: null, teams: []},
+];
+const TL_COLORS = ["#e5484d", "#3b82f6", "#8b5cf6", "#10b981", "#ec4899", "#14b8a6"];
+state.teamLists = [];
+const saveLists = () => store.set("daily.teamLists", state.teamLists);
+const dailyMonth = () => new Date($("dDate").value + "T12:00:00").getMonth() + 1;
+
+/** Drużyna pasuje, gdy nazwa się zgadza, a kraj też - chyba że któraś strona to puchar międzynarodowy ("World"). */
+const sameTeam = (t, country, team) => t.team === team && (t.country === country || t.country === "World" || country === "World");
+const listsFor = (country, team) => state.teamLists.filter(l => l.on && l.teams.some(t => sameTeam(t, country, team)));
+const isListHit = (v) => listsFor(v.match.country, v.match.home).length + listsFor(v.match.country, v.match.away).length > 0;
+
+function listBadges(country, team) {
+    return listsFor(country, team).map(l => {
+        const t = l.teams.find(x => sameTeam(x, country, team));
+        const where = t.rank ? `#${t.rank} w top ${l.teams.length} – ${MONTHS[l.month - 1] ?? ""}` : "dopisana ręcznie";
+        const stats = t.hits != null ? ` · ${t.hits}× w ${t.matches} ${meczeWord(t.matches)}, zdarzenie w ${t.years} lat` : "";
+        return ` <span class="tl-badge" style="background:${esc(l.color)}" title="${esc(l.name)} (${esc(l.events.join(", "))}): ${where}${stats}">${t.rank ? "#" + t.rank : "●"}</span>`;
+    }).join("");
+}
+
+async function fillList(l, render = true) {
+    const month = dailyMonth();
+    const p = new URLSearchParams({month, limit: l.top || 20, sort: l.sort || "YEARS", minMatches: 3, fromYear: 2021});
+    l.events.forEach(e => p.append("events", e));
+    const r = await api("/api/v2/months?" + p);
+    l.teams = r.teams.map((t, k) => ({country: t.country, team: t.team, rank: k + 1, hits: t.hits, matches: t.matches,
+        years: `${t.yearsWithHit}/${t.yearsPlayed}`}));
+    l.month = month;
+    saveLists();
+    if (render) {
+        renderLists();
+        renderDaily();
+    }
+}
+
+/** Listy z "auto" przeliczane, gdy wybrany dzień jest w innym miesiącu niż ten, z którego je wypełniono. */
+async function refreshAutoLists() {
+    const stale = state.teamLists.filter(l => l.auto && l.on && l.events.length && l.month !== dailyMonth());
+    if (!stale.length) return;
+    try {
+        await Promise.all(stale.map(l => fillList(l, false)));
+    } catch (e) {
+        console.warn("Listy drużyn:", e.message);
+    }
+    renderDaily();
+    if ($("listsDlg").open) renderLists();
+}
+
+function renderLists() {
+    $("tlTeams").innerHTML = [...new Map(state.daily.flatMap(v => [[v.match.country, v.match.home], [v.match.country, v.match.away]])
+        .map(([c, t]) => [`${t} (${c})`, 1])).keys()].sort().map(x => `<option value="${esc(x)}">`).join("");
+    $("tlBody").innerHTML = state.teamLists.map((l, i) => `
+        <div class="tl-card" style="border-left-color:${esc(l.color)}">
+            <div class="row">
+                <input type="color" data-i="${i}" data-f="color" value="${esc(l.color)}" title="Kolor listy">
+                <input type="text" data-i="${i}" data-f="name" value="${esc(l.name)}" class="tl-name">
+                <label class="check"><input type="checkbox" data-i="${i}" data-f="on" ${l.on ? "checked" : ""}> pokazuj</label>
+                <span class="chips">${HTFT.map(e => `<button class="chip small-chip ${l.events.includes(e) ? "on" : ""}" data-i="${i}" data-ev="${e}">${e}</button>`).join("")}</span>
+            </div>
+            <div class="row">
+                <span class="small muted">Top</span><input type="number" min="1" max="200" data-i="${i}" data-f="top" value="${l.top}" class="tl-top">
+                <select data-i="${i}" data-f="sort">
+                    <option value="YEARS" ${l.sort === "YEARS" ? "selected" : ""}>wg lat ze zdarzeniem</option>
+                    <option value="HITS" ${l.sort === "HITS" ? "selected" : ""}>wg liczby zdarzeń</option>
+                    <option value="PERCENT" ${l.sort === "PERCENT" ? "selected" : ""}>wg %</option>
+                </select>
+                <button data-i="${i}" data-act="fill">Wrzuć top ${l.top} – ${MONTHS[dailyMonth() - 1]}</button>
+                <label class="check" title="Przelicz samo, gdy zmienisz dzień na inny miesiąc"><input type="checkbox" data-i="${i}" data-f="auto" ${l.auto ? "checked" : ""}> auto</label>
+                <button class="ghost" data-i="${i}" data-act="clear">Wyczyść</button>
+                <button class="ghost" data-i="${i}" data-act="remove">Usuń listę</button>
+            </div>
+            <p class="muted small">${l.teams.length ? `${l.teams.length} drużyn${l.month ? ` · ranking z miesiąca: ${MONTHS[l.month - 1]}` : ""}` : "Lista pusta – kliknij „Wrzuć top” albo dopisz drużynę."}</p>
+            <div class="chips">${l.teams.map((t, k) => `<span class="tl-team" title="${esc(t.country)}${t.hits != null ? ` · ${t.hits}× w ${t.matches} meczach, lata ${t.years}` : ""}">
+                ${t.rank ? `<b>#${t.rank}</b> ` : ""}${esc(t.team)} <span class="muted small">${esc(t.country)}</span>
+                <button class="x" data-i="${i}" data-del="${k}" title="Usuń z listy">×</button></span>`).join("")}</div>
+            <div class="row"><input type="search" list="tlTeams" data-i="${i}" data-act="add" placeholder="Dopisz drużynę (Enter)…" class="tl-add"></div>
+        </div>`).join("") || `<p class="muted">Brak list.</p>`;
+
+    const box = $("tlBody"), L = (el) => state.teamLists[+el.dataset.i];
+    const changed = () => { saveLists(); renderDaily(); };
+    box.querySelectorAll("[data-f]").forEach(el => el.onchange = () => {
+        const l = L(el), f = el.dataset.f;
+        l[f] = el.type === "checkbox" ? el.checked : f === "top" ? Math.max(1, Math.min(200, +el.value || 20)) : el.value;
+        changed();
+        renderLists();
+    });
+    box.querySelectorAll("[data-ev]").forEach(el => el.onclick = () => {
+        const l = L(el), e = el.dataset.ev;
+        l.events = l.events.includes(e) ? l.events.filter(x => x !== e) : [...l.events, e];
+        l.month = null; // inne zdarzenia - auto przeliczy przy następnym wczytaniu dnia
+        changed();
+        renderLists();
+    });
+    box.querySelectorAll("[data-act=fill]").forEach(el => el.onclick = async () => {
+        if (!L(el).events.length) return alert("Zaznacz przynajmniej jedno zdarzenie HT/FT.");
+        el.disabled = true;
+        el.textContent = "Liczę…";
+        try {
+            await fillList(L(el));
+        } catch (e) {
+            alert("Błąd: " + e.message);
+            renderLists();
+        }
+    });
+    box.querySelectorAll("[data-act=clear]").forEach(el => el.onclick = () => { L(el).teams = []; changed(); renderLists(); });
+    box.querySelectorAll("[data-act=remove]").forEach(el => el.onclick = () => {
+        if (!confirm(`Usunąć listę „${L(el).name}”?`)) return;
+        state.teamLists.splice(+el.dataset.i, 1);
+        changed();
+        renderLists();
+    });
+    box.querySelectorAll("[data-del]").forEach(el => el.onclick = () => { L(el).teams.splice(+el.dataset.del, 1); changed(); renderLists(); });
+    box.querySelectorAll("[data-act=add]").forEach(el => el.onkeydown = (e) => {
+        if (e.key !== "Enter" || !el.value.trim()) return;
+        const m = el.value.trim().match(/^(.*) \((.*)\)$/);
+        const t = m ? {country: m[2], team: m[1]} : {country: "World", team: el.value.trim()}; // bez kraju - pasuje po samej nazwie
+        const l = L(el);
+        if (!l.teams.some(x => x.team === t.team && x.country === t.country)) l.teams.push(t);
+        changed();
+        renderLists();
+    });
+}
+
+$("dListsBtn").onclick = () => { renderLists(); $("listsDlg").showModal(); };
+$("tlAdd").onclick = () => {
+    state.teamLists.push({name: "Nowa lista", color: TL_COLORS[state.teamLists.length % TL_COLORS.length], events: ["1/2", "2/1"],
+        top: 20, sort: "YEARS", auto: true, on: true, month: null, teams: []});
+    saveLists();
+    renderLists();
+};
 
 window.toggleDaily = (idx, tr) => {
     if (tr.nextElementSibling?.classList.contains("detail")) return tr.nextElementSibling.remove();
@@ -913,6 +1154,11 @@ async function pollStatus() {
 renderEvents();
 $("dOrder").value = store.get("daily.order", "drought");
 $("dMonthMin").value = store.get("daily.monthMin", "3");
+state.myLeagues = new Set(store.get("daily.myLeagues", []));
+$("dMyLeagues").checked = store.get("daily.myLeaguesOn", false);
+$("dListOnly").checked = store.get("daily.listOnly", false);
+saveMyLeagues();
+state.teamLists = store.get("daily.teamLists", null) ?? TL_DEFAULT();
 loadScraperConfig();
 showView(new URLSearchParams(location.search).get("view") || "daily");
 pollStatus();

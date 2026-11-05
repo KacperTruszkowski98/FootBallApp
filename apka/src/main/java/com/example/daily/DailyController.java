@@ -28,6 +28,12 @@ public class DailyController {
                 droughtEvents == null || droughtEvents.isEmpty() ? com.example.history.HistoryService.EVENTS : droughtEvents);
     }
 
+    /** Ligi i puchary z bazy (kraj + nazwa) - do wyboru "moich lig" w Meczach dnia. */
+    @GetMapping("/leagues")
+    public List<DailyService.LeagueKey> leagues() {
+        return service.leagues();
+    }
+
     /** Kursy 1X2 meczów dnia: externalId -> [1, X, 2]. Pierwsze wywołanie dla dnia może trwać do minuty, kolejne są szybkie. */
     @GetMapping("/odds")
     public java.util.Map<String, double[]> odds(

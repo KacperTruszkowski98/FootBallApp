@@ -72,6 +72,19 @@
                 <input type="checkbox" id="dMonthOnly"> tylko oznaczone 📅
             </label>
             <div class="field">
+                <span class="label">Moje ustawienia</span>
+                <div class="row nowrap">
+                    <button class="ghost" id="dLeaguesBtn" title="Wybierz ligi, które cię interesują - zapamiętane w przeglądarce">⚙ Ligi</button>
+                    <button class="ghost" id="dListsBtn" title="Kolorowe listy drużyn, np. top 20 miesiąca dla lamaków albo 1/X + 2/X">🎨 Listy drużyn</button>
+                </div>
+            </div>
+            <label class="check">
+                <input type="checkbox" id="dMyLeagues"> tylko moje ligi <span id="dMyLeaguesCount" class="muted small"></span>
+            </label>
+            <label class="check">
+                <input type="checkbox" id="dListOnly"> tylko drużyny z list 🎨
+            </label>
+            <div class="field">
                 <span class="label">Dociągnij wyniki</span>
                 <button class="ghost" id="dUpdate" title="Pobiera nowe wyniki z bieżących sezonów krajów, które grają tego dnia">⟳ bieżące sezony</button>
             </div>
@@ -82,6 +95,35 @@
             </div>
         </div>
         <div class="panel" id="dailyResult"></div>
+
+        <dialog id="leaguesDlg" class="dlg">
+            <div class="row between dlg-head">
+                <h2>Moje ligi w Meczach dnia</h2>
+                <button class="ghost icon" data-close title="Zamknij">✕</button>
+            </div>
+            <p class="muted small">Zaznaczone ligi są zapamiętane w tej przeglądarce (zostają po restarcie aplikacji).
+                Gdy włączone jest „tylko moje ligi”, Mecze dnia pokazują wyłącznie je. Ligę możesz też dodać gwiazdką ☆ przy jej nagłówku w Meczach dnia.</p>
+            <div class="row">
+                <input type="search" id="lgSearch" placeholder="Szukaj kraju / ligi…">
+                <button class="ghost" id="lgVisible">Zaznacz widoczne</button>
+                <button class="ghost" id="lgNone">Odznacz wszystkie</button>
+                <span id="lgCount" class="muted small"></span>
+            </div>
+            <div id="lgList" class="country-grid lg-list"></div>
+        </dialog>
+
+        <dialog id="listsDlg" class="dlg">
+            <div class="row between dlg-head">
+                <h2>Listy drużyn</h2>
+                <button class="ghost icon" data-close title="Zamknij">✕</button>
+            </div>
+            <p class="muted small">Drużyna z listy dostaje w Meczach dnia znaczek w kolorze listy (z miejscem w rankingu), a wiersz – kolorowy pasek.
+                „Wrzuć top” bierze ranking z zakładki Miesiące dla miesiąca wybranego dnia. Z „auto” lista sama się przelicza, gdy zmienisz dzień na inny miesiąc
+                (ręczne zmiany w liście są wtedy nadpisywane). Wszystko jest zapamiętane w przeglądarce.</p>
+            <div id="tlBody"></div>
+            <datalist id="tlTeams"></datalist>
+            <div class="actions"><button class="ghost" id="tlAdd">+ Nowa lista</button></div>
+        </dialog>
     </section>
 
     <!-- ================= HISTORIA ================= -->

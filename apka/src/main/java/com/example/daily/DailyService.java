@@ -157,6 +157,18 @@ public class DailyService {
     public record MonthStats(int matches, int hits, int yearsWithHit, int years) {
     }
 
+    /** Wszystkie ligi i puchary, które mają mecze w bazie, posortowane po kraju i nazwie. */
+    public List<LeagueKey> leagues() {
+        Set<LeagueKey> keys = new TreeSet<>(Comparator.comparing((LeagueKey k) -> String.valueOf(k.country())).thenComparing(LeagueKey::league));
+        for (Object[] row : repository.findCompetitionKeys()) {
+            keys.add(new LeagueKey((String) row[0], (String) row[1]));
+        }
+        return new ArrayList<>(keys);
+    }
+
+    public record LeagueKey(String country, String league) {
+    }
+
     public Map<String, double[]> odds(LocalDate date) throws Exception {
         return source.odds(date);
     }
